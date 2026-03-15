@@ -12,7 +12,6 @@ type FilterDefinition = {
   dateTint: string;
   vignette: number;
   grain: number;
-  contrast: number;
 };
 
 type CaptureSettings = {
@@ -26,50 +25,46 @@ const FILTERS: FilterDefinition[] = [
   {
     id: "sunset-superia",
     name: "Sunset Superia",
-    description: "Теплая пленка с янтарными тенями и плотным контрастом.",
+    description: "Теплая пленка с янтарными тенями.",
     filter: "sepia(0.42) saturate(1.45) contrast(1.22) brightness(1.04) hue-rotate(-10deg)",
     tone: [255, 166, 85],
     lightLeak: "from-orange-400/30 via-amber-200/12 to-transparent",
     dateTint: "#ffd28c",
     vignette: 0.3,
-    grain: 0.18,
-    contrast: 1.12
+    grain: 0.18
   },
   {
     id: "neon-vhs",
     name: "Neon VHS",
-    description: "Грязный VHS с холодным цианом, розовыми бликами и глоу.",
+    description: "Холодный VHS с яркими бликами.",
     filter: "contrast(1.28) saturate(1.5) brightness(0.96) hue-rotate(14deg)",
     tone: [74, 214, 201],
     lightLeak: "from-fuchsia-500/25 via-cyan-300/10 to-transparent",
     dateTint: "#92fff4",
     vignette: 0.4,
-    grain: 0.24,
-    contrast: 1.16
+    grain: 0.24
   },
   {
     id: "mono-noir",
     name: "Mono Noir",
-    description: "Жесткий черно-белый режим с кинематографической глубиной.",
+    description: "Жесткий монохромный режим.",
     filter: "grayscale(1) contrast(1.4) brightness(0.92)",
     tone: [240, 240, 240],
     lightLeak: "from-white/14 via-transparent to-black/20",
     dateTint: "#f5f5f5",
     vignette: 0.46,
-    grain: 0.22,
-    contrast: 1.24
+    grain: 0.22
   },
   {
     id: "polaroid-dream",
     name: "Polaroid Dream",
-    description: "Выцветший полароид с молочными светами и мягкими оттенками.",
+    description: "Мягкий выцветший полароид.",
     filter: "sepia(0.22) saturate(1.1) contrast(0.9) brightness(1.12)",
     tone: [255, 214, 180],
     lightLeak: "from-rose-200/26 via-amber-100/15 to-transparent",
     dateTint: "#fff0d8",
     vignette: 0.2,
-    grain: 0.14,
-    contrast: 0.94
+    grain: 0.14
   }
 ];
 
@@ -101,6 +96,7 @@ export default function Page() {
   const [isStarting, setIsStarting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastCaptureUrl, setLastCaptureUrl] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const activeFilter = useMemo(
     () => FILTERS.find((filter) => filter.id === settings.filterId) ?? FILTERS[0],
@@ -150,7 +146,7 @@ export default function Page() {
         const currentDeviceId = initialTrack.getSettings().deviceId;
         setActiveDeviceId(currentDeviceId ?? videoInputs[0]?.deviceId ?? null);
         setIsReady(true);
-      } catch (cameraError) {
+      } catch {
         setError("Не удалось получить доступ к камере. Проверьте разрешения браузера.");
       } finally {
         setIsStarting(false);
@@ -322,60 +318,45 @@ export default function Page() {
     devices.find((device) => device.deviceId === activeDeviceId)?.label || "Камера не определена";
 
   return (
-    <main className="min-h-screen px-4 py-6 text-cream sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#161616] px-3 py-4 text-[#d8e1c8] sm:px-6">
       <a ref={downloadAnchorRef} className="hidden" />
       <canvas ref={previewCanvasRef} className="hidden" />
 
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6">
-        <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[rgba(18,14,12,0.72)] shadow-glow backdrop-blur-xl">
-          <div className="absolute inset-0 bg-noise opacity-90" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      <div className="mx-auto max-w-6xl">
+        <section className="relative overflow-hidden rounded-[32px] border border-black/60 bg-[#716d62] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
+          <div className="rounded-[26px] border border-black/40 bg-[#4d4a43] p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between border-b border-black/25 pb-3 font-mono text-[11px] uppercase tracking-[0.32em] text-[#1b1b18]">
+              <span>Retro Cam DC-2003</span>
+              <span>{activeFilter.name}</span>
+            </div>
 
-          <div className="relative grid min-h-[calc(100vh-3rem)] gap-6 p-4 lg:grid-cols-[1.4fr_0.86fr] lg:p-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/55">Retro Photo Lab</p>
-                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-                    Эмулятор ретро-камеры
-                  </h1>
-                </div>
-                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-right text-xs uppercase tracking-[0.25em] text-white/60">
-                  Static Export
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <InfoCard title="Фильтр" value={activeFilter.name} detail={activeFilter.description} />
-                <InfoCard title="Камера" value={`${devices.length || 0}`} detail={cameraLabel} />
-                <InfoCard title="Экспорт" value="JPG" detail="Сохранение прямо на устройство" />
-              </div>
-
-              <div className="film-grain relative flex-1 overflow-hidden rounded-[28px] border border-white/10 bg-black/70">
+            <div className="grid gap-4 lg:grid-cols-[1fr_250px]">
+              <div className="relative overflow-hidden rounded-[22px] border-[10px] border-[#20211d] bg-[#0b0f0a]">
                 <video
                   ref={videoRef}
-                  className="h-full min-h-[380px] w-full object-cover lg:min-h-[720px]"
+                  className="h-full min-h-[420px] w-full object-cover lg:min-h-[720px]"
                   autoPlay
                   muted
                   playsInline
                   style={{ filter: activeFilter.filter }}
                 />
 
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/30" />
-                <div
-                  className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`}
-                />
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(213,232,176,0.07),rgba(0,0,0,0.12))]" />
+                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`} />
+                <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:repeating-linear-gradient(to_bottom,rgba(216,225,200,0.16),rgba(216,225,200,0.16)_1px,transparent_1px,transparent_4px)]" />
 
-                <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs uppercase tracking-[0.28em] text-white/70 backdrop-blur">
-                  <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.85)]" />
-                  Live View
+                <div className="absolute left-3 top-3 flex items-center gap-2 rounded-md border border-[#46513d] bg-[#171d16]/85 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-[#cdd8b6]">
+                  <span className="h-2 w-2 rounded-full bg-[#c7ff71]" />
+                  Rec
+                </div>
+
+                <div className="absolute right-3 top-3 rounded-md border border-[#46513d] bg-[#171d16]/85 px-2 py-1 font-mono text-[11px] text-[#cdd8b6]">
+                  CAM {devices.length || 1}
                 </div>
 
                 {settings.showTimestamp ? (
                   <div
-                    className="pointer-events-none absolute bottom-4 right-4 font-mono text-sm tracking-[0.2em]"
+                    className="pointer-events-none absolute bottom-3 right-3 font-mono text-sm tracking-[0.2em]"
                     style={{ color: activeFilter.dateTint }}
                   >
                     {new Date().toLocaleDateString("ru-RU")}
@@ -383,32 +364,43 @@ export default function Page() {
                 ) : null}
 
                 {isStarting ? (
-                  <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm">
-                    <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm uppercase tracking-[0.3em] text-white/70">
+                  <div className="absolute inset-0 grid place-items-center bg-[#10130f]/78">
+                    <div className="rounded-md border border-[#516047] bg-[#1a2218] px-4 py-2 font-mono text-xs uppercase tracking-[0.28em] text-[#cdd8b6]">
                       Подключение камеры
                     </div>
                   </div>
                 ) : null}
 
                 {error ? (
-                  <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-red-300/25 bg-red-950/60 p-4 text-sm text-red-100 backdrop-blur">
+                  <div className="absolute inset-x-3 bottom-3 rounded-md border border-[#654d40] bg-[#2b1d17]/90 p-3 font-mono text-xs text-[#ffd4bd]">
                     {error}
                   </div>
                 ) : null}
               </div>
-            </div>
 
-            <aside className="flex flex-col gap-4">
-              <div className="rounded-[28px] border border-white/10 bg-black/25 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.35em] text-white/45">Capture Deck</p>
-                <div className="mt-4 grid grid-cols-2 gap-3">
+              <aside className="flex flex-col justify-between gap-4">
+                <div className="rounded-[22px] border border-black/35 bg-[#2d2b27] p-3">
+                  <div className="rounded-[16px] border border-[#4d5a46] bg-[#b8c79c] px-3 py-3 font-mono text-[12px] leading-5 text-[#25311d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]">
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em]">
+                      <span>Mode</span>
+                      <span>Photo</span>
+                    </div>
+                    <div className="mt-3 space-y-1">
+                      <div>FILTER: {activeFilter.name}</div>
+                      <div>CAMERA: {devices.length || 1}</div>
+                      <div>SAVE: JPG</div>
+                      <div>{isReady ? "STATUS: READY" : "STATUS: BOOT"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={capturePhoto}
-                    disabled={!isReady || isStarting}
-                    className="rounded-[22px] border border-amber-200/30 bg-gradient-to-br from-amber-100 via-orange-300 to-orange-500 px-4 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-ink transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setIsMenuOpen((current) => !current)}
+                    className="rounded-[18px] border border-black/35 bg-[#2a2a26] px-4 py-3 font-mono text-xs uppercase tracking-[0.28em] text-[#ece7d5]"
                   >
-                    Снять фото
+                    Menu
                   </button>
                   <button
                     type="button"
@@ -422,71 +414,90 @@ export default function Page() {
                       }
                     }}
                     disabled={devices.length < 2 || isStarting}
-                    className="rounded-[22px] border border-white/15 bg-white/5 px-4 py-4 text-sm font-medium uppercase tracking-[0.2em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="rounded-[18px] border border-black/35 bg-[#2a2a26] px-4 py-3 font-mono text-xs uppercase tracking-[0.2em] text-[#ece7d5] disabled:opacity-50"
                   >
-                    Сменить камеру
+                    Lens
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    disabled={!isReady || isStarting}
+                    className="col-span-2 rounded-[24px] border border-black/40 bg-[#d2c6af] px-4 py-5 font-mono text-sm uppercase tracking-[0.32em] text-[#191713] disabled:opacity-50"
+                  >
+                    Shutter
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          {isMenuOpen ? (
+            <div className="absolute inset-0 flex items-end justify-end bg-black/28 p-3 sm:p-5">
+              <div className="w-full max-w-[360px] rounded-[24px] border border-black/55 bg-[#2a2925] p-4 shadow-[0_30px_60px_rgba(0,0,0,0.45)]">
+                <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="font-mono text-xs uppercase tracking-[0.32em] text-[#ece7d5]">
+                    Camera Menu
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-md border border-white/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.24em] text-[#cfd6be]"
+                  >
+                    Exit
                   </button>
                 </div>
 
-                <label className="mt-4 block text-sm text-white/70">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.28em] text-white/45">
-                    Активная камера
-                  </span>
-                  <select
-                    value={activeDeviceId ?? ""}
-                    onChange={(event) => void startCamera(event.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.06)] px-4 py-3 text-base text-white outline-none transition focus:border-amber-200/40"
-                  >
-                    {devices.map((device, index) => (
-                      <option key={device.deviceId} value={device.deviceId} className="bg-zinc-900">
-                        {device.label || `Камера ${index + 1}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="mb-2 block font-mono text-[11px] uppercase tracking-[0.24em] text-[#aeb89d]">
+                      Camera Select
+                    </span>
+                    <select
+                      value={activeDeviceId ?? ""}
+                      onChange={(event) => void startCamera(event.target.value)}
+                      className="w-full rounded-[14px] border border-[#485344] bg-[#151713] px-3 py-3 font-mono text-sm text-[#d8e1c8] outline-none"
+                    >
+                      {devices.map((device, index) => (
+                        <option key={device.deviceId} value={device.deviceId} className="bg-[#151713]">
+                          {device.label || `Камера ${index + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-              <div className="rounded-[28px] border border-white/10 bg-black/25 p-4 backdrop-blur">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/45">Filters</p>
-                  <span className="text-xs text-white/45">Мощные ретро пресеты</span>
-                </div>
+                  <div>
+                    <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.24em] text-[#aeb89d]">
+                      Picture Style
+                    </div>
+                    <div className="space-y-2">
+                      {FILTERS.map((filter) => {
+                        const isActive = filter.id === activeFilter.id;
+                        return (
+                          <button
+                            key={filter.id}
+                            type="button"
+                            onClick={() =>
+                              setSettings((current) => ({
+                                ...current,
+                                filterId: filter.id
+                              }))
+                            }
+                            className={`w-full rounded-[14px] border px-3 py-3 text-left font-mono text-sm ${
+                              isActive
+                                ? "border-[#718365] bg-[#b8c79c] text-[#1e2718]"
+                                : "border-[#43473d] bg-[#181916] text-[#d8e1c8]"
+                            }`}
+                          >
+                            <div className="uppercase tracking-[0.18em]">{filter.name}</div>
+                            <div className={`${isActive ? "text-[#314127]" : "text-[#98a38a]"} mt-1 text-xs`}>
+                              {filter.description}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                <div className="mt-4 grid gap-3">
-                  {FILTERS.map((filter) => {
-                    const isActive = filter.id === activeFilter.id;
-                    return (
-                      <button
-                        key={filter.id}
-                        type="button"
-                        onClick={() => setSettings((current) => ({ ...current, filterId: filter.id }))}
-                        className={`rounded-[22px] border p-4 text-left transition ${
-                          isActive
-                            ? "border-amber-200/35 bg-white/10 shadow-[0_18px_40px_rgba(0,0,0,0.24)]"
-                            : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <div className="text-base font-medium text-white">{filter.name}</div>
-                            <p className="mt-1 text-sm text-white/58">{filter.description}</p>
-                          </div>
-                          <div
-                            className="h-11 w-11 rounded-2xl border border-white/10"
-                            style={{
-                              background: `linear-gradient(135deg, rgba(${filter.tone[0]}, ${filter.tone[1]}, ${filter.tone[2]}, 0.95), rgba(15,15,15,0.9))`
-                            }}
-                          />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-[28px] border border-white/10 bg-black/25 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.35em] text-white/45">Settings</p>
-                <div className="mt-4 space-y-4">
                   <RangeSetting
                     label="Grain"
                     value={settings.grainBoost}
@@ -513,8 +524,9 @@ export default function Page() {
                       }))
                     }
                   />
-                  <label className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70">
-                    <span>Дата на кадре</span>
+
+                  <label className="flex items-center justify-between rounded-[14px] border border-[#43473d] bg-[#181916] px-3 py-3 font-mono text-sm text-[#d8e1c8]">
+                    <span>Date Stamp</span>
                     <input
                       type="checkbox"
                       checked={settings.showTimestamp}
@@ -524,34 +536,21 @@ export default function Page() {
                           showTimestamp: event.target.checked
                         }))
                       }
-                      className="h-5 w-5 accent-amber-300"
+                      className="h-4 w-4 accent-[#b8c79c]"
                     />
                   </label>
+
+                  <div className="rounded-[14px] border border-[#43473d] bg-[#181916] px-3 py-3 font-mono text-xs leading-5 text-[#98a38a]">
+                    <div>ACTIVE: {activeFilter.name}</div>
+                    <div>DEVICE: {cameraLabel}</div>
+                  </div>
                 </div>
               </div>
-            </aside>
-          </div>
+            </div>
+          ) : null}
         </section>
       </div>
     </main>
-  );
-}
-
-function InfoCard({
-  title,
-  value,
-  detail
-}: {
-  title: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4 backdrop-blur">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/45">{title}</p>
-      <div className="mt-3 text-xl font-semibold text-white">{value}</div>
-      <p className="mt-1 text-sm text-white/55">{detail}</p>
-    </div>
   );
 }
 
@@ -571,8 +570,8 @@ function RangeSetting({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="block rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-3">
-      <div className="mb-3 flex items-center justify-between text-sm text-white/70">
+    <label className="block rounded-[14px] border border-[#43473d] bg-[#181916] px-3 py-3">
+      <div className="mb-3 flex items-center justify-between font-mono text-sm text-[#d8e1c8]">
         <span>{label}</span>
         <span>{value.toFixed(2)}x</span>
       </div>

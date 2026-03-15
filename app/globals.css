@@ -4,11 +4,11 @@
 
 :root {
   color-scheme: dark;
-  --bg: #120f10;
-  --panel: rgba(26, 19, 16, 0.72);
+  --bg: #161616;
+  --panel: rgba(34, 34, 34, 0.9);
   --line: rgba(255, 255, 255, 0.12);
-  --text: #f8f3eb;
-  --muted: rgba(248, 243, 235, 0.72);
+  --text: #d8e1c8;
+  --muted: rgba(216, 225, 200, 0.72);
   --font-sans: "Avenir Next", "Segoe UI", sans-serif;
 }
 
@@ -17,10 +17,7 @@
 }
 
 html {
-  background:
-    radial-gradient(circle at top, rgba(255, 140, 66, 0.2), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(143, 76, 43, 0.25), transparent 36%),
-    linear-gradient(135deg, #080708 0%, #161112 45%, #211619 100%);
+  background: #161616;
 }
 
 body {
@@ -28,8 +25,8 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% 20%, rgba(255, 205, 128, 0.08), transparent 35%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 28%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 24%),
+    #161616;
 }
 
 a {
@@ -60,29 +57,27 @@ input {
 .range-slider {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: #3b4037;
 }
 
 .range-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
-  background: #f2e8d5;
-  border: 2px solid #120f10;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  background: #b8c79c;
+  border: 2px solid #181916;
   cursor: pointer;
 }
 
 .range-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
-  background: #f2e8d5;
-  border: 2px solid #120f10;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  background: #b8c79c;
+  border: 2px solid #181916;
   cursor: pointer;
 }
