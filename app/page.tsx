@@ -1,333 +1,324 @@
-"use client";
+'use client'
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type FilterDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  filter: string;
-  tone: [number, number, number];
-  lightLeak: string;
-  dateTint: string;
-  vignette: number;
-  grain: number;
-};
+  id: string
+  name: string
+  description: string
+  filter: string
+  tone: [number, number, number]
+  lightLeak: string
+  dateTint: string
+  vignette: number
+  grain: number
+}
 
 type CaptureSettings = {
-  filterId: string;
-  grainBoost: number;
-  vignetteBoost: number;
-  showTimestamp: boolean;
-};
+  filterId: string
+  grainBoost: number
+  vignetteBoost: number
+  showTimestamp: boolean
+}
 
 type TiltState = {
-  beta: number;
-  gamma: number;
-  angle: number;
-};
+  angle: number
+  isLandscape: boolean
+}
 
 type BatteryManagerLike = {
-  level: number;
-  charging: boolean;
-  addEventListener: (type: string, listener: () => void) => void;
-  removeEventListener: (type: string, listener: () => void) => void;
-};
+  level: number
+  charging: boolean
+  addEventListener: (type: string, listener: () => void) => void
+  removeEventListener: (type: string, listener: () => void) => void
+}
 
 type NavigatorWithBattery = Navigator & {
-  getBattery?: () => Promise<BatteryManagerLike>;
-};
+  getBattery?: () => Promise<BatteryManagerLike>
+}
 
-type MenuView = "main" | "filter" | "camera" | "grain" | "vignette" | "date";
+type MenuView = 'main' | 'filter' | 'camera' | 'grain' | 'vignette' | 'date'
 
 const FILTERS: FilterDefinition[] = [
   {
-    id: "sunset-superia",
-    name: "SUNSET SUPERIA",
-    description: "Теплая пленка с янтарными тенями.",
-    filter: "sepia(0.42) saturate(1.45) contrast(1.22) brightness(1.04) hue-rotate(-10deg)",
+    id: 'sunset-superia',
+    name: 'SUNSET SUPERIA',
+    description: 'Теплая пленка с янтарными тенями.',
+    filter:
+      'sepia(0.42) saturate(1.45) contrast(1.22) brightness(1.04) hue-rotate(-10deg)',
     tone: [255, 166, 85],
-    lightLeak: "from-orange-400/28 via-amber-200/12 to-transparent",
-    dateTint: "#ffd28c",
+    lightLeak: 'from-orange-400/28 via-amber-200/12 to-transparent',
+    dateTint: '#ffd28c',
     vignette: 0.3,
-    grain: 0.18
+    grain: 0.18,
   },
   {
-    id: "neon-vhs",
-    name: "NEON VHS",
-    description: "Холодный VHS с яркими бликами.",
-    filter: "contrast(1.28) saturate(1.5) brightness(0.96) hue-rotate(14deg)",
+    id: 'neon-vhs',
+    name: 'NEON VHS',
+    description: 'Холодный VHS с яркими бликами.',
+    filter: 'contrast(1.28) saturate(1.5) brightness(0.96) hue-rotate(14deg)',
     tone: [74, 214, 201],
-    lightLeak: "from-fuchsia-500/22 via-cyan-300/10 to-transparent",
-    dateTint: "#92fff4",
+    lightLeak: 'from-fuchsia-500/22 via-cyan-300/10 to-transparent',
+    dateTint: '#92fff4',
     vignette: 0.4,
-    grain: 0.24
+    grain: 0.24,
   },
   {
-    id: "mono-noir",
-    name: "MONO NOIR",
-    description: "Жесткий монохромный режим.",
-    filter: "grayscale(1) contrast(1.4) brightness(0.92)",
+    id: 'mono-noir',
+    name: 'MONO NOIR',
+    description: 'Жесткий монохромный режим.',
+    filter: 'grayscale(1) contrast(1.4) brightness(0.92)',
     tone: [240, 240, 240],
-    lightLeak: "from-white/12 via-transparent to-black/20",
-    dateTint: "#f5f5f5",
+    lightLeak: 'from-white/12 via-transparent to-black/20',
+    dateTint: '#f5f5f5',
     vignette: 0.46,
-    grain: 0.22
+    grain: 0.22,
   },
   {
-    id: "polaroid-dream",
-    name: "POLAROID DREAM",
-    description: "Мягкий выцветший полароид.",
-    filter: "sepia(0.22) saturate(1.1) contrast(0.9) brightness(1.12)",
+    id: 'polaroid-dream',
+    name: 'POLAROID DREAM',
+    description: 'Мягкий выцветший полароид.',
+    filter: 'sepia(0.22) saturate(1.1) contrast(0.9) brightness(1.12)',
     tone: [255, 214, 180],
-    lightLeak: "from-rose-200/24 via-amber-100/15 to-transparent",
-    dateTint: "#fff0d8",
+    lightLeak: 'from-rose-200/24 via-amber-100/15 to-transparent',
+    dateTint: '#fff0d8',
     vignette: 0.2,
-    grain: 0.14
-  }
-];
+    grain: 0.14,
+  },
+]
 
 const defaultSettings: CaptureSettings = {
   filterId: FILTERS[0].id,
   grainBoost: 0.8,
   vignetteBoost: 0.72,
-  showTimestamp: true
-};
+  showTimestamp: true,
+}
 
-const grainOptions = [0.55, 0.75, 0.95, 1.15, 1.35];
-const vignetteOptions = [0.45, 0.7, 0.95, 1.2, 1.45];
+const grainOptions = [0.55, 0.75, 0.95, 1.15, 1.35]
+const vignetteOptions = [0.45, 0.7, 0.95, 1.2, 1.45]
 
 function stopMediaStream(stream: MediaStream | null) {
-  stream?.getTracks().forEach((track) => track.stop());
+  stream?.getTracks().forEach((track) => track.stop())
 }
 
 function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+  return Math.min(max, Math.max(min, value))
 }
 
 function getScreenAngle() {
-  if (typeof window === "undefined") {
-    return 0;
+  if (typeof window === 'undefined') {
+    return 0
   }
 
-  const orientation = window.screen.orientation;
-  if (orientation && typeof orientation.angle === "number") {
-    return orientation.angle;
+  const orientation = window.screen.orientation
+  if (orientation && typeof orientation.angle === 'number') {
+    return orientation.angle
   }
 
-  return typeof window.orientation === "number" ? window.orientation : 0;
+  return typeof window.orientation === 'number' ? window.orientation : 0
 }
 
 export default function Page() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const downloadAnchorRef = useRef<HTMLAnchorElement>(null);
-  const activeStreamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
+  const downloadAnchorRef = useRef<HTMLAnchorElement>(null)
+  const activeStreamRef = useRef<MediaStream | null>(null)
 
-  const [settings, setSettings] = useState<CaptureSettings>(defaultSettings);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const [isStarting, setIsStarting] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastCaptureUrl, setLastCaptureUrl] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [menuView, setMenuView] = useState<MenuView>("main");
-  const [tilt, setTilt] = useState<TiltState>({ beta: 0, gamma: 0, angle: 0 });
-  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
-  const [isCharging, setIsCharging] = useState(false);
-  const [clockText, setClockText] = useState("");
+  const [settings, setSettings] = useState<CaptureSettings>(defaultSettings)
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
+  const [isReady, setIsReady] = useState(false)
+  const [isStarting, setIsStarting] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [lastCaptureUrl, setLastCaptureUrl] = useState<string | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [menuView, setMenuView] = useState<MenuView>('main')
+  const [tilt, setTilt] = useState<TiltState>({
+    angle: 0,
+    isLandscape: false,
+  })
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null)
+  const [isCharging, setIsCharging] = useState(false)
+  const [clockText, setClockText] = useState('')
 
   const activeFilter = useMemo(
-    () => FILTERS.find((filter) => filter.id === settings.filterId) ?? FILTERS[0],
-    [settings.filterId]
-  );
+    () =>
+      FILTERS.find((filter) => filter.id === settings.filterId) ?? FILTERS[0],
+    [settings.filterId],
+  )
 
-  const viewOffsetX = clamp(tilt.gamma * 0.15, -7, 7);
-  const viewOffsetY = clamp(tilt.beta * 0.1, -7, 7);
-  const tiltRotate = clamp(tilt.gamma * 0.08, -3, 3);
-  const dateAngle = clamp(tilt.gamma * 0.32 + tilt.beta * 0.08 + tilt.angle, -30, 30);
+  const uiAngle = tilt.isLandscape
+    ? Math.abs(tilt.angle) === 90
+      ? tilt.angle
+      : 90
+    : 0
+  const dateAngle = uiAngle
+
+  useEffect(() => {
+    return () => {
+      stopMediaStream(activeStreamRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     return () => {
       if (lastCaptureUrl) {
-        URL.revokeObjectURL(lastCaptureUrl);
+        URL.revokeObjectURL(lastCaptureUrl)
       }
-      stopMediaStream(activeStreamRef.current);
-    };
-  }, [lastCaptureUrl]);
+    }
+  }, [lastCaptureUrl])
 
   useEffect(() => {
     async function bootstrapCamera() {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError("Браузер не поддерживает доступ к камере.");
-        setIsStarting(false);
-        return;
+        setError('Браузер не поддерживает доступ к камере.')
+        setIsStarting(false)
+        return
       }
 
-      setIsStarting(true);
-      setError(null);
+      setIsStarting(true)
+      setError(null)
 
       try {
         const initialStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: "environment" },
+            facingMode: { ideal: 'environment' },
             width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            height: { ideal: 1080 },
           },
-          audio: false
-        });
+          audio: false,
+        })
 
-        activeStreamRef.current = initialStream;
+        activeStreamRef.current = initialStream
         if (videoRef.current) {
-          videoRef.current.srcObject = initialStream;
+          videoRef.current.srcObject = initialStream
         }
 
-        const availableDevices = await navigator.mediaDevices.enumerateDevices();
-        const videoInputs = availableDevices.filter((device) => device.kind === "videoinput");
-        setDevices(videoInputs);
+        const availableDevices = await navigator.mediaDevices.enumerateDevices()
+        const videoInputs = availableDevices.filter(
+          (device) => device.kind === 'videoinput',
+        )
+        setDevices(videoInputs)
 
-        const initialTrack = initialStream.getVideoTracks()[0];
-        const currentDeviceId = initialTrack.getSettings().deviceId;
-        setActiveDeviceId(currentDeviceId ?? videoInputs[0]?.deviceId ?? null);
-        setIsReady(true);
+        const initialTrack = initialStream.getVideoTracks()[0]
+        const currentDeviceId = initialTrack.getSettings().deviceId
+        setActiveDeviceId(currentDeviceId ?? videoInputs[0]?.deviceId ?? null)
+        setIsReady(true)
       } catch {
-        setError("Не удалось получить доступ к камере. Проверьте разрешения браузера.");
+        setError(
+          'Не удалось получить доступ к камере. Проверьте разрешения браузера.',
+        )
       } finally {
-        setIsStarting(false);
+        setIsStarting(false)
       }
     }
 
-    void bootstrapCamera();
-  }, []);
+    void bootstrapCamera()
+  }, [])
 
   useEffect(() => {
     const handleDeviceChange = async () => {
       try {
-        const availableDevices = await navigator.mediaDevices.enumerateDevices();
-        setDevices(availableDevices.filter((device) => device.kind === "videoinput"));
+        const availableDevices = await navigator.mediaDevices.enumerateDevices()
+        setDevices(
+          availableDevices.filter((device) => device.kind === 'videoinput'),
+        )
       } catch {
         // Ignore enumerateDevices errors after permissions change.
       }
-    };
+    }
 
-    navigator.mediaDevices?.addEventListener?.("devicechange", handleDeviceChange);
+    navigator.mediaDevices?.addEventListener?.(
+      'devicechange',
+      handleDeviceChange,
+    )
     return () => {
-      navigator.mediaDevices?.removeEventListener?.("devicechange", handleDeviceChange);
-    };
-  }, []);
+      navigator.mediaDevices?.removeEventListener?.(
+        'devicechange',
+        handleDeviceChange,
+      )
+    }
+  }, [])
 
   useEffect(() => {
     const updateClock = () => {
       setClockText(
-        new Date().toLocaleTimeString("ru-RU", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-        })
-      );
-    };
+        new Date().toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+      )
+    }
 
-    updateClock();
-    const timer = window.setInterval(updateClock, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+    updateClock()
+    const timer = window.setInterval(updateClock, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
-    let battery: BatteryManagerLike | null = null;
+    let battery: BatteryManagerLike | null = null
 
     const syncBattery = () => {
       if (!battery) {
-        return;
+        return
       }
-      setBatteryLevel(Math.round(battery.level * 100));
-      setIsCharging(battery.charging);
-    };
+      setBatteryLevel(Math.round(battery.level * 100))
+      setIsCharging(battery.charging)
+    }
 
     const initBattery = async () => {
-      const batteryApi = navigator as NavigatorWithBattery;
+      const batteryApi = navigator as NavigatorWithBattery
       if (!batteryApi.getBattery) {
-        return;
+        return
       }
 
       try {
-        battery = await batteryApi.getBattery();
-        syncBattery();
-        battery.addEventListener("levelchange", syncBattery);
-        battery.addEventListener("chargingchange", syncBattery);
+        battery = await batteryApi.getBattery()
+        syncBattery()
+        battery.addEventListener('levelchange', syncBattery)
+        battery.addEventListener('chargingchange', syncBattery)
       } catch {
         // Ignore Battery API failures.
       }
-    };
+    }
 
-    void initBattery();
+    void initBattery()
 
     return () => {
       if (!battery) {
-        return;
+        return
       }
-      battery.removeEventListener("levelchange", syncBattery);
-      battery.removeEventListener("chargingchange", syncBattery);
-    };
-  }, []);
+      battery.removeEventListener('levelchange', syncBattery)
+      battery.removeEventListener('chargingchange', syncBattery)
+    }
+  }, [])
 
   useEffect(() => {
-    const applyOrientation = (beta: number, gamma: number) => {
-      setTilt({
-        beta: clamp(beta || 0, -35, 35),
-        gamma: clamp(gamma || 0, -35, 35),
-        angle: getScreenAngle()
-      });
-    };
-
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      applyOrientation(event.beta ?? 0, event.gamma ?? 0);
-    };
-
     const handleScreenChange = () => {
-      setTilt((current) => ({
-        ...current,
-        angle: getScreenAngle()
-      }));
-    };
-
-    setTilt((current) => ({ ...current, angle: getScreenAngle() }));
-
-    const orientationApi = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<"granted" | "denied">;
-    };
-
-    if (typeof orientationApi?.requestPermission === "function") {
-      const enableByGesture = async () => {
-        try {
-          const result = await orientationApi.requestPermission?.();
-          if (result === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-          }
-        } catch {
-          // Ignore denied motion permission.
-        }
-        window.removeEventListener("pointerdown", enableByGesture);
-      };
-
-      window.addEventListener("pointerdown", enableByGesture, { once: true });
-    } else {
-      window.addEventListener("deviceorientation", handleOrientation);
+      const angle = getScreenAngle()
+      const isLandscape = Math.abs(angle) === 90 || window.innerWidth > window.innerHeight
+      setTilt({ angle, isLandscape })
     }
 
-    window.screen.orientation?.addEventListener?.("change", handleScreenChange);
-    window.addEventListener("orientationchange", handleScreenChange);
+    handleScreenChange()
+    window.screen.orientation?.addEventListener?.('change', handleScreenChange)
+    window.addEventListener('orientationchange', handleScreenChange)
+    window.addEventListener('resize', handleScreenChange)
 
     return () => {
-      window.removeEventListener("deviceorientation", handleOrientation);
-      window.screen.orientation?.removeEventListener?.("change", handleScreenChange);
-      window.removeEventListener("orientationchange", handleScreenChange);
-    };
-  }, []);
+      window.screen.orientation?.removeEventListener?.(
+        'change',
+        handleScreenChange,
+      )
+      window.removeEventListener('orientationchange', handleScreenChange)
+      window.removeEventListener('resize', handleScreenChange)
+    }
+  }, [])
 
   async function startCamera(deviceId?: string) {
-    setError(null);
-    setIsStarting(true);
+    setError(null)
+    setIsStarting(true)
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -335,31 +326,31 @@ export default function Page() {
           ? {
               deviceId: { exact: deviceId },
               width: { ideal: 1920 },
-              height: { ideal: 1080 }
+              height: { ideal: 1080 },
             }
           : {
-              facingMode: { ideal: "environment" },
+              facingMode: { ideal: 'environment' },
               width: { ideal: 1920 },
-              height: { ideal: 1080 }
+              height: { ideal: 1080 },
             },
-        audio: false
-      });
+        audio: false,
+      })
 
-      stopMediaStream(activeStreamRef.current);
-      activeStreamRef.current = stream;
+      stopMediaStream(activeStreamRef.current)
+      activeStreamRef.current = stream
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+        videoRef.current.srcObject = stream
+        await videoRef.current.play().catch(() => undefined)
       }
 
-      const track = stream.getVideoTracks()[0];
-      setActiveDeviceId(track.getSettings().deviceId ?? deviceId ?? null);
-      setIsReady(true);
+      const track = stream.getVideoTracks()[0]
+      setActiveDeviceId(track.getSettings().deviceId ?? deviceId ?? null)
+      setIsReady(true)
     } catch {
-      setError("Не удалось переключить камеру.");
+      setError('Не удалось переключить камеру.')
     } finally {
-      setIsStarting(false);
+      setIsStarting(false)
     }
   }
 
@@ -367,10 +358,10 @@ export default function Page() {
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
-    filter: FilterDefinition
+    filter: FilterDefinition,
   ) {
-    const centerX = width / 2;
-    const centerY = height / 2;
+    const centerX = width / 2
+    const centerY = height / 2
 
     const vignette = ctx.createRadialGradient(
       centerX,
@@ -378,109 +369,129 @@ export default function Page() {
       Math.min(width, height) * 0.18,
       centerX,
       centerY,
-      Math.max(width, height) * 0.72
-    );
-    const vignetteStrength = clamp(filter.vignette * settings.vignetteBoost, 0, 0.8);
-    vignette.addColorStop(0, "rgba(0,0,0,0)");
-    vignette.addColorStop(0.65, "rgba(0,0,0,0)");
-    vignette.addColorStop(1, `rgba(0,0,0,${vignetteStrength})`);
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, width, height);
+      Math.max(width, height) * 0.72,
+    )
+    const vignetteStrength = clamp(
+      filter.vignette * settings.vignetteBoost,
+      0,
+      0.8,
+    )
+    vignette.addColorStop(0, 'rgba(0,0,0,0)')
+    vignette.addColorStop(0.65, 'rgba(0,0,0,0)')
+    vignette.addColorStop(1, `rgba(0,0,0,${vignetteStrength})`)
+    ctx.fillStyle = vignette
+    ctx.fillRect(0, 0, width, height)
 
-    const leak = ctx.createLinearGradient(0, 0, width * 0.7, height);
-    leak.addColorStop(0, `rgba(${filter.tone[0]}, ${filter.tone[1]}, ${filter.tone[2]}, 0.34)`);
-    leak.addColorStop(0.28, `rgba(${filter.tone[0]}, ${filter.tone[1]}, ${filter.tone[2]}, 0.12)`);
-    leak.addColorStop(0.8, "rgba(255,255,255,0)");
-    ctx.fillStyle = leak;
-    ctx.fillRect(0, 0, width, height);
+    const leak = ctx.createLinearGradient(0, 0, width * 0.7, height)
+    leak.addColorStop(
+      0,
+      `rgba(${filter.tone[0]}, ${filter.tone[1]}, ${filter.tone[2]}, 0.34)`,
+    )
+    leak.addColorStop(
+      0.28,
+      `rgba(${filter.tone[0]}, ${filter.tone[1]}, ${filter.tone[2]}, 0.12)`,
+    )
+    leak.addColorStop(0.8, 'rgba(255,255,255,0)')
+    ctx.fillStyle = leak
+    ctx.fillRect(0, 0, width, height)
 
-    const grainOpacity = clamp(filter.grain * settings.grainBoost, 0.06, 0.38);
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
+    const grainOpacity = clamp(filter.grain * settings.grainBoost, 0.06, 0.38)
+    const imageData = ctx.getImageData(0, 0, width, height)
+    const data = imageData.data
     for (let index = 0; index < data.length; index += 4) {
-      const noise = (Math.random() - 0.5) * 255 * grainOpacity;
-      data[index] = clamp(data[index] + noise, 0, 255);
-      data[index + 1] = clamp(data[index + 1] + noise, 0, 255);
-      data[index + 2] = clamp(data[index + 2] + noise, 0, 255);
+      const noise = (Math.random() - 0.5) * 255 * grainOpacity
+      data[index] = clamp(data[index] + noise, 0, 255)
+      data[index + 1] = clamp(data[index + 1] + noise, 0, 255)
+      data[index + 2] = clamp(data[index + 2] + noise, 0, 255)
     }
-    ctx.putImageData(imageData, 0, 0);
+    ctx.putImageData(imageData, 0, 0)
 
     if (settings.showTimestamp) {
-      const stamp = new Date().toLocaleDateString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit"
-      });
-      ctx.save();
-      ctx.translate(width - 44, height - 38);
-      ctx.rotate((dateAngle * Math.PI) / 180);
-      ctx.font = `${Math.max(18, width * 0.02)}px monospace`;
-      ctx.textAlign = "right";
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = filter.dateTint;
-      ctx.fillText(stamp, 0, 0);
-      ctx.restore();
+      const stamp = new Date().toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      })
+      ctx.save()
+      ctx.translate(width - 44, height - 38)
+      ctx.rotate((dateAngle * Math.PI) / 180)
+      ctx.font = `${Math.max(18, width * 0.02)}px monospace`
+      ctx.textAlign = 'right'
+      ctx.shadowColor = 'rgba(0,0,0,0.55)'
+      ctx.shadowBlur = 10
+      ctx.fillStyle = filter.dateTint
+      ctx.fillText(stamp, 0, 0)
+      ctx.restore()
     }
   }
 
   function capturePhoto() {
-    const video = videoRef.current;
-    const canvas = previewCanvasRef.current;
-    const anchor = downloadAnchorRef.current;
+    const video = videoRef.current
+    const canvas = previewCanvasRef.current
+    const anchor = downloadAnchorRef.current
 
-    if (!video || !canvas || !anchor || video.videoWidth === 0 || video.videoHeight === 0) {
-      return;
+    if (
+      !video ||
+      !canvas ||
+      !anchor ||
+      video.videoWidth === 0 ||
+      video.videoHeight === 0
+    ) {
+      return
     }
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d')
     if (!ctx) {
-      return;
+      return
     }
 
-    const width = video.videoWidth;
-    const height = video.videoHeight;
-    canvas.width = width;
-    canvas.height = height;
+    const width = video.videoWidth
+    const height = video.videoHeight
+    canvas.width = width
+    canvas.height = height
 
-    ctx.clearRect(0, 0, width, height);
-    ctx.filter = activeFilter.filter;
-    ctx.drawImage(video, 0, 0, width, height);
-    ctx.filter = "none";
-    drawOverlay(ctx, width, height, activeFilter);
+    ctx.clearRect(0, 0, width, height)
+    ctx.filter = activeFilter.filter
+    ctx.drawImage(video, 0, 0, width, height)
+    ctx.filter = 'none'
+    drawOverlay(ctx, width, height, activeFilter)
 
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          return;
+          return
         }
 
         if (lastCaptureUrl) {
-          URL.revokeObjectURL(lastCaptureUrl);
+          URL.revokeObjectURL(lastCaptureUrl)
         }
 
-        const objectUrl = URL.createObjectURL(blob);
-        setLastCaptureUrl(objectUrl);
-        anchor.href = objectUrl;
-        anchor.download = `retro-shot-${Date.now()}.jpg`;
-        anchor.click();
+        const objectUrl = URL.createObjectURL(blob)
+        setLastCaptureUrl(objectUrl)
+        anchor.href = objectUrl
+        anchor.download = `retro-shot-${Date.now()}.jpg`
+        anchor.click()
       },
-      "image/jpeg",
-      0.95
-    );
+      'image/jpeg',
+      0.95,
+    )
   }
 
   const cameraLabel =
-    devices.find((device) => device.deviceId === activeDeviceId)?.label || `CAM ${devices.length || 1}`;
-  const batteryText = batteryLevel === null ? "BAT --" : `BAT ${batteryLevel}%${isCharging ? "+" : ""}`;
-  const tiltText = `TILT ${Math.round(Math.abs(tilt.gamma))}D`;
-  const modeText = activeFilter.name;
-  const stampText = settings.showTimestamp ? "DATE ON" : "DATE OFF";
+    devices.find((device) => device.deviceId === activeDeviceId)?.label ||
+    `CAM ${devices.length || 1}`
+  const batteryText =
+    batteryLevel === null
+      ? 'BAT --'
+      : `BAT ${batteryLevel}%${isCharging ? '+' : ''}`
+  const tiltText = tilt.isLandscape ? 'LANDSCAPE' : 'PORTRAIT'
+  const modeText = activeFilter.name
+  const stampText = settings.showTimestamp ? 'DATE ON' : 'DATE OFF'
 
   const openMenu = () => {
-    setMenuView("main");
-    setIsMenuOpen(true);
-  };
+    setMenuView('main')
+    setIsMenuOpen(true)
+  }
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -499,12 +510,16 @@ export default function Page() {
           />
 
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.52)_100%)]" />
-          <div className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`} />
+          <div
+            className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`}
+          />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_22%,transparent_78%,rgba(255,255,255,0.02))]" />
 
           <div
             className="absolute inset-0 transition-transform duration-200"
-            style={{ transform: `translate(${viewOffsetX}px, ${viewOffsetY}px) rotate(${tiltRotate}deg)` }}
+            style={{
+              transform: `rotate(${uiAngle}deg)`,
+            }}
           >
             <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.22em] text-white">
               {modeText}
@@ -512,12 +527,6 @@ export default function Page() {
 
             <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.22em] text-white">
               {clockText}
-            </div>
-
-            <div className="pointer-events-none absolute right-4 top-4 flex flex-col items-end gap-1 font-mono text-[9px] uppercase tracking-[0.2em] text-white">
-              <span>{batteryText}</span>
-              <span>{tiltText}</span>
-              <span>{stampText}</span>
             </div>
 
             <HudCorner className="left-[20%] top-[24%] border-l border-t" />
@@ -532,20 +541,28 @@ export default function Page() {
 
             <div className="pointer-events-none absolute bottom-5 left-4 font-mono text-[9px] uppercase tracking-[0.18em] text-white">
               <div className="mb-2 flex items-end gap-1">
-                <span>L</span>
-                <Meter active={Math.max(3, Math.round(settings.grainBoost * 7))} />
+                <span>G</span>
+                <Meter
+                  active={Math.max(3, Math.round(settings.grainBoost * 7))}
+                />
               </div>
               <div className="mb-2 flex items-end gap-1">
-                <span>R</span>
-                <Meter active={Math.max(3, Math.round(settings.vignetteBoost * 7))} />
+                <span>V</span>
+                <Meter
+                  active={Math.max(3, Math.round(settings.vignetteBoost * 7))}
+                />
               </div>
               <div>{cameraLabel}</div>
             </div>
 
             <div className="pointer-events-none absolute bottom-5 right-4 text-right font-mono text-[9px] uppercase tracking-[0.18em] text-white">
-              <div>{isReady ? "READY" : "BOOT"}</div>
-              <div>{devices.length > 1 ? `${devices.length} LENSES` : "SINGLE LENS"}</div>
-              <div>{settings.showTimestamp ? "STAMPED JPG" : "CLEAN JPG"}</div>
+              <div>{isReady ? 'READY' : 'BOOT'}</div>
+              <div>
+                {devices.length > 1
+                  ? `${devices.length} LENSES`
+                  : 'SINGLE LENS'}
+              </div>
+              <div>{settings.showTimestamp ? 'STAMPED JPG' : 'CLEAN JPG'}</div>
             </div>
 
             {settings.showTimestamp ? (
@@ -553,10 +570,10 @@ export default function Page() {
                 className="pointer-events-none absolute bottom-20 right-5 font-mono text-sm tracking-[0.16em]"
                 style={{
                   color: activeFilter.dateTint,
-                  transform: `rotate(${dateAngle}deg)`
+                  transform: `rotate(${dateAngle}deg)`,
                 }}
               >
-                {new Date().toLocaleDateString("ru-RU")}
+                {new Date().toLocaleDateString('ru-RU')}
               </div>
             ) : null}
 
@@ -578,7 +595,7 @@ export default function Page() {
           <button
             type="button"
             onClick={openMenu}
-            className="absolute right-4 top-4 z-20 rounded-full border border-white/65 bg-black/45 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.26em] text-white backdrop-blur-sm"
+            className="absolute right-1 top-2 z-20 rounded-lg bg-black/45 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.26em] text-white backdrop-blur-sm"
           >
             Set
           </button>
@@ -587,7 +604,7 @@ export default function Page() {
             type="button"
             onClick={capturePhoto}
             disabled={!isReady || isStarting}
-            className="absolute bottom-4 right-4 z-20 h-20 w-20 rounded-full border-4 border-white bg-black/35 text-white shadow-[0_0_30px_rgba(255,255,255,0.15)] backdrop-blur-sm disabled:opacity-50"
+            className="absolute bottom-4 left-[40%] z-20 h-20 w-20 rounded-full border-4 border-white bg-black/35 text-white shadow-[0_0_30px_rgba(255,255,255,0.15)] backdrop-blur-sm disabled:opacity-50"
           >
             <span className="block h-full w-full rounded-full border-2 border-white/70" />
           </button>
@@ -596,41 +613,41 @@ export default function Page() {
             <div className="absolute inset-0 z-30 bg-black/78 p-4">
               <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-white/15 bg-black/85">
                 <div className="border-b border-white/15 px-4 py-3 font-mono text-sm uppercase tracking-[0.28em] text-white">
-                  {menuView === "main" ? "Camera Setup" : "Select Option"}
+                  {menuView === 'main' ? 'Camera Setup' : 'Select Option'}
                 </div>
 
                 <div className="flex-1 overflow-auto px-3 py-3">
-                  {menuView === "main" ? (
+                  {menuView === 'main' ? (
                     <div className="space-y-2">
                       <MenuButton
                         label="Picture Mode"
                         value={activeFilter.name}
-                        onClick={() => setMenuView("filter")}
+                        onClick={() => setMenuView('filter')}
                       />
                       <MenuButton
                         label="Lens Select"
                         value={cameraLabel}
-                        onClick={() => setMenuView("camera")}
+                        onClick={() => setMenuView('camera')}
                       />
                       <MenuButton
                         label="Grain Level"
                         value={`${settings.grainBoost.toFixed(2)}x`}
-                        onClick={() => setMenuView("grain")}
+                        onClick={() => setMenuView('grain')}
                       />
                       <MenuButton
                         label="Vignette"
                         value={`${settings.vignetteBoost.toFixed(2)}x`}
-                        onClick={() => setMenuView("vignette")}
+                        onClick={() => setMenuView('vignette')}
                       />
                       <MenuButton
                         label="Date Stamp"
-                        value={settings.showTimestamp ? "On" : "Off"}
-                        onClick={() => setMenuView("date")}
+                        value={settings.showTimestamp ? 'On' : 'Off'}
+                        onClick={() => setMenuView('date')}
                       />
                     </div>
                   ) : null}
 
-                  {menuView === "filter" ? (
+                  {menuView === 'filter' ? (
                     <div className="space-y-2">
                       {FILTERS.map((filter) => (
                         <SelectButton
@@ -639,32 +656,39 @@ export default function Page() {
                           detail={filter.description}
                           selected={filter.id === activeFilter.id}
                           onClick={() => {
-                            setSettings((current) => ({ ...current, filterId: filter.id }));
-                            setMenuView("main");
+                            setSettings((current) => ({
+                              ...current,
+                              filterId: filter.id,
+                            }))
+                            setMenuView('main')
                           }}
                         />
                       ))}
                     </div>
                   ) : null}
 
-                  {menuView === "camera" ? (
+                  {menuView === 'camera' ? (
                     <div className="space-y-2">
                       {devices.map((device, index) => (
                         <SelectButton
                           key={device.deviceId}
                           label={device.label || `Camera ${index + 1}`}
-                          detail={device.deviceId === activeDeviceId ? "Active lens" : "Tap to switch"}
+                          detail={
+                            device.deviceId === activeDeviceId
+                              ? 'Active lens'
+                              : 'Tap to switch'
+                          }
                           selected={device.deviceId === activeDeviceId}
                           onClick={() => {
-                            void startCamera(device.deviceId);
-                            setMenuView("main");
+                            void startCamera(device.deviceId)
+                            setMenuView('main')
                           }}
                         />
                       ))}
                     </div>
                   ) : null}
 
-                  {menuView === "grain" ? (
+                  {menuView === 'grain' ? (
                     <div className="space-y-2">
                       {grainOptions.map((option) => (
                         <SelectButton
@@ -673,15 +697,18 @@ export default function Page() {
                           detail="Film grain intensity"
                           selected={option === settings.grainBoost}
                           onClick={() => {
-                            setSettings((current) => ({ ...current, grainBoost: option }));
-                            setMenuView("main");
+                            setSettings((current) => ({
+                              ...current,
+                              grainBoost: option,
+                            }))
+                            setMenuView('main')
                           }}
                         />
                       ))}
                     </div>
                   ) : null}
 
-                  {menuView === "vignette" ? (
+                  {menuView === 'vignette' ? (
                     <div className="space-y-2">
                       {vignetteOptions.map((option) => (
                         <SelectButton
@@ -690,23 +717,29 @@ export default function Page() {
                           detail="Frame edge darkening"
                           selected={option === settings.vignetteBoost}
                           onClick={() => {
-                            setSettings((current) => ({ ...current, vignetteBoost: option }));
-                            setMenuView("main");
+                            setSettings((current) => ({
+                              ...current,
+                              vignetteBoost: option,
+                            }))
+                            setMenuView('main')
                           }}
                         />
                       ))}
                     </div>
                   ) : null}
 
-                  {menuView === "date" ? (
+                  {menuView === 'date' ? (
                     <div className="space-y-2">
                       <SelectButton
                         label="Date On"
                         detail="Print date on preview and photo"
                         selected={settings.showTimestamp}
                         onClick={() => {
-                          setSettings((current) => ({ ...current, showTimestamp: true }));
-                          setMenuView("main");
+                          setSettings((current) => ({
+                            ...current,
+                            showTimestamp: true,
+                          }))
+                          setMenuView('main')
                         }}
                       />
                       <SelectButton
@@ -714,8 +747,11 @@ export default function Page() {
                         detail="Save clean photo without stamp"
                         selected={!settings.showTimestamp}
                         onClick={() => {
-                          setSettings((current) => ({ ...current, showTimestamp: false }));
-                          setMenuView("main");
+                          setSettings((current) => ({
+                            ...current,
+                            showTimestamp: false,
+                          }))
+                          setMenuView('main')
                         }}
                       />
                     </div>
@@ -725,16 +761,20 @@ export default function Page() {
                 <div className="grid grid-cols-2 gap-2 border-t border-white/15 p-3">
                   <button
                     type="button"
-                    onClick={() => (menuView === "main" ? setIsMenuOpen(false) : setMenuView("main"))}
+                    onClick={() =>
+                      menuView === 'main'
+                        ? setIsMenuOpen(false)
+                        : setMenuView('main')
+                    }
                     className="rounded-full border border-white/20 px-3 py-2 font-mono text-xs uppercase tracking-[0.24em] text-white"
                   >
-                    {menuView === "main" ? "Close" : "Back"}
+                    {menuView === 'main' ? 'Close' : 'Back'}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setIsMenuOpen(false);
-                      setMenuView("main");
+                      setIsMenuOpen(false)
+                      setMenuView('main')
                     }}
                     className="rounded-full border border-white/20 px-3 py-2 font-mono text-xs uppercase tracking-[0.24em] text-white"
                   >
@@ -747,11 +787,15 @@ export default function Page() {
         </div>
       </section>
     </main>
-  );
+  )
 }
 
 function HudCorner({ className }: { className: string }) {
-  return <div className={`pointer-events-none absolute h-4 w-4 border-white/90 ${className}`} />;
+  return (
+    <div
+      className={`pointer-events-none absolute h-4 w-4 border-white/90 ${className}`}
+    />
+  )
 }
 
 function Meter({ active = 11 }: { active?: number }) {
@@ -760,22 +804,22 @@ function Meter({ active = 11 }: { active?: number }) {
       {Array.from({ length: 12 }).map((_, index) => (
         <span
           key={index}
-          className={`block w-[3px] ${index < active ? "bg-white" : "bg-white/30"}`}
+          className={`block w-[3px] ${index < active ? 'bg-white' : 'bg-white/30'}`}
           style={{ height: `${4 + (index % 6) * 2}px` }}
         />
       ))}
     </div>
-  );
+  )
 }
 
 function MenuButton({
   label,
   value,
-  onClick
+  onClick,
 }: {
-  label: string;
-  value: string;
-  onClick: () => void;
+  label: string
+  value: string
+  onClick: () => void
 }) {
   return (
     <button
@@ -783,35 +827,45 @@ function MenuButton({
       onClick={onClick}
       className="flex w-full items-center justify-between rounded-[18px] border border-white/15 bg-white/[0.04] px-4 py-4 text-left"
     >
-      <span className="font-mono text-sm uppercase tracking-[0.18em] text-white">{label}</span>
-      <span className="ml-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/60">{value}</span>
+      <span className="font-mono text-sm uppercase tracking-[0.18em] text-white">
+        {label}
+      </span>
+      <span className="ml-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/60">
+        {value}
+      </span>
     </button>
-  );
+  )
 }
 
 function SelectButton({
   label,
   detail,
   selected,
-  onClick
+  onClick,
 }: {
-  label: string;
-  detail: string;
-  selected: boolean;
-  onClick: () => void;
+  label: string
+  detail: string
+  selected: boolean
+  onClick: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`w-full rounded-[18px] border px-4 py-4 text-left ${
-        selected ? "border-white bg-white text-black" : "border-white/15 bg-white/[0.04] text-white"
+        selected
+          ? 'border-white bg-white text-black'
+          : 'border-white/15 bg-white/[0.04] text-white'
       }`}
     >
-      <div className="font-mono text-sm uppercase tracking-[0.18em]">{label}</div>
-      <div className={`mt-1 font-mono text-[11px] uppercase tracking-[0.14em] ${selected ? "text-black/70" : "text-white/55"}`}>
+      <div className="font-mono text-sm uppercase tracking-[0.18em]">
+        {label}
+      </div>
+      <div
+        className={`mt-1 font-mono text-[11px] uppercase tracking-[0.14em] ${selected ? 'text-black/70' : 'text-white/55'}`}
+      >
         {detail}
       </div>
     </button>
-  );
+  )
 }
