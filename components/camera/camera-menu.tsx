@@ -1,6 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react'
 
-import { FILTERS } from '@/lib/filters'
+import {
+  FILTERS,
+  RANDOM_FILTER_ID,
+  RANDOM_FILTER_OPTION,
+  getFilterById,
+  isRandomFilterId,
+} from '@/lib/filters'
 import { grainOptions, vignetteOptions } from '@/lib/options'
 import type { CaptureSettings, MenuView } from '@/lib/types'
 
@@ -50,7 +56,11 @@ export function CameraMenu({
             <div className="space-y-2">
               <MenuButton
                 label="Picture Mode"
-                value={FILTERS.find((filter) => filter.id === settings.filterId)?.name ?? FILTERS[0].name}
+                value={
+                  isRandomFilterId(settings.filterId)
+                    ? RANDOM_FILTER_OPTION.name
+                    : getFilterById(settings.filterId)?.name ?? FILTERS[0].name
+                }
                 onClick={() => onMenuViewChange('filter')}
               />
               <MenuButton
@@ -78,6 +88,18 @@ export function CameraMenu({
 
           {menuView === 'filter' ? (
             <div className="space-y-2">
+              <SelectButton
+                label={RANDOM_FILTER_OPTION.name}
+                detail={RANDOM_FILTER_OPTION.description}
+                selected={settings.filterId === RANDOM_FILTER_ID}
+                onClick={() => {
+                  onSettingsChange((current) => ({
+                    ...current,
+                    filterId: RANDOM_FILTER_ID,
+                  }))
+                  onMenuViewChange('main')
+                }}
+              />
               {FILTERS.map((filter) => (
                 <SelectButton
                   key={filter.id}

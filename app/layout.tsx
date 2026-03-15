@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   title: "Retro Photo Camera",
   description: "Static retro camera emulator built with Next.js",
   applicationName: "Retro Photo",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -14,14 +13,6 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
   }
 };
 
@@ -37,6 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
+      <head>
+        <link rel="manifest" href="./manifest.webmanifest" />
+        <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png" />
+        <link rel="icon" href="./icon-512.png" sizes="512x512" type="image/png" />
+        <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
+      </head>
       <body>
         <RegisterServiceWorker />
         {children}

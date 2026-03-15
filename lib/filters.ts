@@ -1,5 +1,13 @@
 import type { CaptureSettings, FilterDefinition } from './types'
 
+export const RANDOM_FILTER_ID = 'random-filter'
+
+export const RANDOM_FILTER_OPTION = {
+  id: RANDOM_FILTER_ID,
+  name: 'RANDOM FILTER',
+  description: 'В превью без эффекта, случайный фильтр применяется только при съемке.',
+}
+
 export const FILTERS: FilterDefinition[] = [
   {
     id: 'sunset-superia',
@@ -175,4 +183,21 @@ export const defaultSettings: CaptureSettings = {
   grainBoost: 0.8,
   vignetteBoost: 0.72,
   showTimestamp: true,
+}
+
+export function getFilterById(filterId: string) {
+  return FILTERS.find((filter) => filter.id === filterId)
+}
+
+export function isRandomFilterId(filterId: string) {
+  return filterId === RANDOM_FILTER_ID
+}
+
+export function pickRandomFilter() {
+  if (FILTERS.length === 0) {
+    return undefined
+  }
+
+  const randomIndex = Math.floor(Math.random() * FILTERS.length)
+  return FILTERS[randomIndex]
 }

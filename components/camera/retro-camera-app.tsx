@@ -5,7 +5,14 @@ import { useMemo, useState } from 'react'
 import { useBattery } from '@/hooks/use-battery'
 import { useCamera } from '@/hooks/use-camera'
 import { useClock } from '@/hooks/use-clock'
-import { FILTERS, defaultSettings } from '@/lib/filters'
+import {
+  FILTERS,
+  RANDOM_FILTER_OPTION,
+  defaultSettings,
+  getFilterById,
+  isRandomFilterId,
+  pickRandomFilter,
+} from '@/lib/filters'
 import type { CaptureSettings, MenuView } from '@/lib/types'
 
 import { CameraHud } from './camera-hud'
@@ -32,10 +39,10 @@ export function RetroCameraApp() {
   const clockText = useClock()
   const { batteryLevel, isCharging } = useBattery()
 
-  const activeFilter = useMemo(
-    () => FILTERS.find((filter) => filter.id === settings.filterId) ?? FILTERS[0],
-    [settings.filterId],
-  )
+  const selectedFilter = useMemo(() => getFilterById(settings.filterId), [settings.filterId])
+  const isRandomFilterMode = isRandomFilterId(settings.filterId)
+  const activeFilter = selectedFilter ?? FILTERS[0]
+  const previewFilter = isRandomFilterMode ? null : activeFilter
 
   const cameraLabel =
     devices.find((device) => device.deviceId === activeDeviceId)?.label ||
@@ -45,6 +52,7 @@ export function RetroCameraApp() {
   const lensText = devices.length > 1 ? `${devices.length} LENSES` : 'SINGLE LENS'
   const statusText = isReady ? 'READY' : 'BOOT'
   const stampText = settings.showTimestamp ? 'DATE ON' : 'DATE OFF'
+  const modeText = isRandomFilterMode ? RANDOM_FILTER_OPTION.name : activeFilter.name
 
   const openMenu = () => {
     setMenuView('main')
@@ -78,22 +86,26 @@ export function RetroCameraApp() {
             autoPlay
             muted
             playsInline
-            style={{ filter: activeFilter.filter }}
+            style={{ filter: previewFilter?.filter ?? 'none' }}
           />
 
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.52)_100%)]" />
-          <div
-            className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`}
-          />
+          {previewFilter ? (
+            <div
+              className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${previewFilter.lightLeak}`}
+            />
+          ) : null}
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_22%,transparent_78%,rgba(255,255,255,0.02))]" />
-          <PreviewEffects
-            filter={activeFilter}
-            grainBoost={settings.grainBoost}
-            vignetteBoost={settings.vignetteBoost}
-          />
+          {previewFilter ? (
+            <PreviewEffects
+              filter={previewFilter}
+              grainBoost={settings.grainBoost}
+              vignetteBoost={settings.vignetteBoost}
+            />
+          ) : null}
 
           <CameraHud
-            modeText={activeFilter.name}
+            modeText={modeText}
             clockText={clockText}
             batteryText={batteryText}
             statusText={statusText}
@@ -103,7 +115,7 @@ export function RetroCameraApp() {
             grainBoost={settings.grainBoost}
             vignetteBoost={settings.vignetteBoost}
             showTimestamp={settings.showTimestamp}
-            dateTint={activeFilter.dateTint}
+            dateTint={previewFilter?.dateTint ?? '#ffffff'}
             isStarting={isStarting}
             error={error}
           />
@@ -118,7 +130,14 @@ export function RetroCameraApp() {
 
           <button
             type="button"
-            onClick={() => capturePhoto(activeFilter, settings)}
+            onClick={() => {
+              const filterForCapture = isRandomFilterMode ? pickRandomFilter() : activeFilter
+              if (!filterForCapture) {
+                return
+              }
+
+              capturePhoto(filterForCapture, settings)
+            }}
             disabled={!isReady || isStarting}
             className="absolute bottom-4 left-[40%] z-20 h-20 w-20 rounded-full border-4 border-white bg-black/35 text-white shadow-[0_0_30px_rgba(255,255,255,0.15)] backdrop-blur-sm disabled:opacity-50"
           >

@@ -1,4 +1,4 @@
-const CACHE_NAME = "retro-photo-v1";
+const CACHE_NAME = "retro-photo-v2";
 const APP_SHELL = [
   "./",
   "./manifest.webmanifest",
