@@ -40,6 +40,32 @@ export function drawPhotoOverlay(
   ctx.fillStyle = leak
   ctx.fillRect(0, 0, width, height)
 
+  ctx.save()
+  ctx.globalCompositeOperation = 'soft-light'
+  ctx.fillStyle = `rgba(${filter.previewTint[0]}, ${filter.previewTint[1]}, ${filter.previewTint[2]}, ${filter.previewTintOpacity})`
+  ctx.fillRect(0, 0, width, height)
+  ctx.restore()
+
+  const bloom = ctx.createRadialGradient(
+    width * 0.18,
+    height * 0.16,
+    0,
+    width * 0.18,
+    height * 0.16,
+    Math.max(width, height) * 0.8,
+  )
+  bloom.addColorStop(
+    0,
+    `rgba(${filter.bloomTint[0]}, ${filter.bloomTint[1]}, ${filter.bloomTint[2]}, ${filter.bloomOpacity})`,
+  )
+  bloom.addColorStop(0.45, `rgba(${filter.bloomTint[0]}, ${filter.bloomTint[1]}, ${filter.bloomTint[2]}, ${filter.bloomOpacity * 0.32})`)
+  bloom.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.save()
+  ctx.globalCompositeOperation = 'screen'
+  ctx.fillStyle = bloom
+  ctx.fillRect(0, 0, width, height)
+  ctx.restore()
+
   const grainOpacity = clamp(filter.grain * settings.grainBoost, 0.06, 0.38)
   const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data

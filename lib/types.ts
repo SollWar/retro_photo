@@ -4,6 +4,11 @@ export type FilterDefinition = {
   description: string
   filter: string
   tone: [number, number, number]
+  previewTint: [number, number, number]
+  previewTintOpacity: number
+  bloomTint: [number, number, number]
+  bloomOpacity: number
+  grainScale: number
   lightLeak: string
   dateTint: string
   vignette: number

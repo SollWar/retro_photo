@@ -10,6 +10,7 @@ import type { CaptureSettings, MenuView } from '@/lib/types'
 
 import { CameraHud } from './camera-hud'
 import { CameraMenu } from './camera-menu'
+import { PreviewEffects } from './preview-effects'
 
 export function RetroCameraApp() {
   const [settings, setSettings] = useState<CaptureSettings>(defaultSettings)
@@ -85,6 +86,11 @@ export function RetroCameraApp() {
             className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${activeFilter.lightLeak}`}
           />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_22%,transparent_78%,rgba(255,255,255,0.02))]" />
+          <PreviewEffects
+            filter={activeFilter}
+            grainBoost={settings.grainBoost}
+            vignetteBoost={settings.vignetteBoost}
+          />
 
           <CameraHud
             modeText={activeFilter.name}
