@@ -10,8 +10,16 @@ export function RegisterServiceWorker() {
 
     const register = async () => {
       try {
-        await navigator.serviceWorker.register(new URL("./sw.js", window.location.href), {
-          scope: "./"
+        const manifestHref =
+          document
+            .querySelector('link[rel="manifest"]')
+            ?.getAttribute("href") ?? "./manifest.webmanifest";
+        const manifestUrl = new URL(manifestHref, window.location.href);
+        const serviceWorkerUrl = new URL("sw.js", manifestUrl);
+        const scopeUrl = new URL(".", serviceWorkerUrl);
+
+        await navigator.serviceWorker.register(serviceWorkerUrl, {
+          scope: scopeUrl.pathname
         });
       } catch {
         // Ignore registration failures in unsupported environments.

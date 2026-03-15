@@ -19,6 +19,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      PAGES_CUSTOM_DOMAIN: retro.z3rg.ru
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

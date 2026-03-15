@@ -2,6 +2,7 @@
   "name": "Retro Photo Camera",
   "short_name": "Retro Photo",
   "description": "Ретро камера с живыми фильтрами и сохранением фото на устройство.",
+  "id": "./",
   "lang": "ru",
   "dir": "ltr",
   "start_url": "./",
@@ -11,6 +12,7 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "categories": ["photo", "camera", "lifestyle"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./icon-192.png",

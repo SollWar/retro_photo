@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PAGES_CUSTOM_DOMAIN: retro.z3rg.ru
 
     steps:
       - name: Checkout repository

@@ -1,4 +1,4 @@
-const CACHE_NAME = "retro-photo-v2";
+const CACHE_NAME = "retro-photo-v3";
 const APP_SHELL = [
   "./",
   "./manifest.webmanifest",
@@ -30,6 +30,41 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isDocumentRequest = event.request.mode === "navigate" || event.request.destination === "document";
+  const isManifestRequest = requestUrl.pathname.endsWith("manifest.webmanifest");
+  const shouldUseNetworkFirst = isSameOrigin && (isDocumentRequest || isManifestRequest);
+
+  if (shouldUseNetworkFirst) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+
+          return networkResponse;
+        })
+        .catch(() =>
+          caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+
+            if (isDocumentRequest) {
+              return caches.match("./");
+            }
+
+            return undefined;
+          })
+        )
+    );
+
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -38,7 +73,7 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(event.request)
         .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== "basic") {
+          if (!networkResponse || networkResponse.status !== 200) {
             return networkResponse;
           }
 

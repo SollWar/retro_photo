@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { useBattery } from '@/hooks/use-battery'
 import { useCamera } from '@/hooks/use-camera'
 import { useClock } from '@/hooks/use-clock'
+import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import {
   FILTERS,
   RANDOM_FILTER_OPTION,
@@ -38,6 +39,7 @@ export function RetroCameraApp() {
   } = useCamera()
   const clockText = useClock()
   const { batteryLevel, isCharging } = useBattery()
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
 
   const selectedFilter = useMemo(() => getFilterById(settings.filterId), [settings.filterId])
   const isRandomFilterMode = isRandomFilterId(settings.filterId)
@@ -151,12 +153,17 @@ export function RetroCameraApp() {
             cameraLabel={cameraLabel}
             activeDeviceId={activeDeviceId}
             devices={devices}
+            canInstall={canInstall}
+            isInstalled={isInstalled}
             onClose={closeMenu}
             onBack={backMenu}
             onMenuViewChange={setMenuView}
             onSettingsChange={setSettings}
             onCameraSelect={(deviceId) => {
               void startCamera(deviceId)
+            }}
+            onInstall={() => {
+              void promptInstall()
             }}
           />
         </div>

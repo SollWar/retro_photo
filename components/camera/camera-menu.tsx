@@ -20,11 +20,14 @@ type CameraMenuProps = {
   cameraLabel: string
   activeDeviceId: string | null
   devices: MediaDeviceInfo[]
+  canInstall: boolean
+  isInstalled: boolean
   onClose: () => void
   onBack: () => void
   onMenuViewChange: (view: MenuView) => void
   onSettingsChange: Dispatch<SetStateAction<CaptureSettings>>
   onCameraSelect: (deviceId: string) => void
+  onInstall: () => void
 }
 
 export function CameraMenu({
@@ -34,11 +37,14 @@ export function CameraMenu({
   cameraLabel,
   activeDeviceId,
   devices,
+  canInstall,
+  isInstalled,
   onClose,
   onBack,
   onMenuViewChange,
   onSettingsChange,
   onCameraSelect,
+  onInstall,
 }: CameraMenuProps) {
   if (!isOpen) {
     return null
@@ -82,6 +88,11 @@ export function CameraMenu({
                 label="Date Stamp"
                 value={settings.showTimestamp ? 'On' : 'Off'}
                 onClick={() => onMenuViewChange('date')}
+              />
+              <MenuButton
+                label="Install App"
+                value={isInstalled ? 'Installed' : canInstall ? 'Ready' : 'Browser'}
+                onClick={onInstall}
               />
             </div>
           ) : null}
