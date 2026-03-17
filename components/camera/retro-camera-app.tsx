@@ -170,7 +170,7 @@ export function RetroCameraApp() {
         <div className="relative min-h-0 flex-1">
           <div className="absolute inset-0 flex items-center justify-center">
             <div
-              className="theme-preview-surface relative w-full max-h-full max-w-full overflow-hidden rounded-[34px] border"
+              className="theme-preview-surface theme-live-preview relative w-full max-h-full max-w-full overflow-hidden rounded-[34px]"
               style={{ aspectRatio: `${previewAspectRatio}` }}
             >
               <div className="theme-preview-overlay pointer-events-none absolute inset-0" />
