@@ -41,6 +41,106 @@ input {
   font: inherit;
 }
 
+.theme-shell {
+  background: var(--theme-shell-background);
+  color: var(--theme-text);
+}
+
+.theme-preview-surface {
+  background-color: var(--theme-bg-soft);
+  border-color: var(--theme-border);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px var(--theme-border-faint);
+}
+
+.theme-preview-overlay {
+  background: var(--theme-preview-background);
+}
+
+.theme-panel-surface {
+  background-color: var(--theme-panel);
+  border-color: var(--theme-border);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px var(--theme-border-faint);
+}
+
+.theme-card-surface {
+  background-color: var(--theme-card);
+  border-color: var(--theme-border-soft);
+  box-shadow: inset 0 0 0 1px var(--theme-border-faint);
+}
+
+.theme-chip-soft {
+  background-color: var(--theme-chip);
+  border-color: var(--theme-border-soft);
+  color: var(--theme-text);
+}
+
+.theme-chip-strong {
+  background-color: var(--theme-accent);
+  border-color: var(--theme-border-strong);
+  color: var(--theme-accent-text);
+}
+
+.theme-primary-action {
+  background-color: var(--theme-accent);
+  border-color: var(--theme-border-strong);
+  color: var(--theme-accent-text);
+}
+
+.theme-primary-action-inner {
+  background-color: var(--theme-accent-soft);
+  border-color: var(--theme-accent-ring);
+}
+
+.theme-secondary-action {
+  background-color: var(--theme-chip);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+.theme-status-panel {
+  background-color: var(--theme-status-panel);
+  border-color: var(--theme-border);
+  box-shadow: inset 0 0 0 1px var(--theme-border-faint);
+}
+
+.theme-label {
+  color: var(--theme-label);
+}
+
+.theme-text-soft {
+  color: var(--theme-text-soft);
+}
+
+.theme-hud-line {
+  background-color: var(--theme-hud-line);
+}
+
+.theme-hud-border {
+  border-color: var(--theme-hud-line);
+}
+
+.theme-stripe-track {
+  background-color: var(--theme-card);
+}
+
+.theme-stripe-active {
+  background-color: var(--theme-accent);
+}
+
+.theme-stripe-inactive {
+  background-color: var(--theme-inactive-stripe);
+}
+
+.theme-error-panel {
+  background-color: var(--theme-error-background);
+  border-color: var(--theme-error-border);
+  color: var(--theme-error-text);
+}
+
 .film-grain::after {
   content: "";
   position: absolute;

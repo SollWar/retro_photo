@@ -56,18 +56,18 @@ export function CameraMenu({
   const vignettePercent = toPercent(settings.vignetteBoost, VIGNETTE_MIN, VIGNETTE_MAX)
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(203,148,89,0.18),transparent_28%),linear-gradient(180deg,#120b08,#050302)]">
+    <div className="theme-shell fixed inset-0 z-40 overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] min-w-0 flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
-        <div className="rounded-[30px] border border-amber-200/18 bg-[#1a120d]/96 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,214,170,0.04)] sm:p-6">
-          <div className="flex items-start justify-between gap-4 border-b border-amber-200/10 pb-5">
+        <div className="theme-panel-surface rounded-[30px] border p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4 border-b border-[color:var(--theme-border-soft)] pb-5">
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-amber-200/72">
+              <div className="theme-label font-mono text-[11px] uppercase tracking-[0.34em]">
                 Настройки
               </div>
-              <div className="mt-3 font-mono text-[clamp(26px,5vw,40px)] uppercase tracking-[0.06em] text-white">
+              <div className="mt-3 font-mono text-[clamp(26px,5vw,40px)] uppercase tracking-[0.06em] text-[color:var(--theme-text)]">
                 Параметры камеры
               </div>
-              <div className="mt-3 max-w-[32rem] text-sm leading-6 text-amber-50/70">
+              <div className="theme-text-soft mt-3 max-w-[32rem] text-sm leading-6">
                 Все настройки собраны на одном экране. Эффект, текстура и камера
                 меняются сразу, а превью остается чистым, если включен случайный режим.
               </div>
@@ -76,7 +76,7 @@ export function CameraMenu({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-amber-200/18 bg-[#241710]/82 text-4xl leading-none text-amber-50/92 transition hover:border-amber-200/38 hover:text-amber-100"
+              className="theme-secondary-action grid h-12 w-12 shrink-0 place-items-center rounded-full border text-4xl leading-none transition hover:brightness-110"
             >
               <span className="-mt-1">×</span>
             </button>
@@ -90,24 +90,24 @@ export function CameraMenu({
             >
               <div className="-mx-1 overflow-x-auto px-1 pb-1">
                 <div className="flex min-w-max gap-2">
-                {filterOptions.map((option) => (
-                  <ProfileButton
-                    key={option.id}
-                    active={settings.filterId === option.id}
-                    onClick={() => {
-                      onSettingsChange((current) => ({
-                        ...current,
-                        filterId: option.id,
-                      }))
-                    }}
-                  >
-                    {option.name}
-                  </ProfileButton>
-                ))}
+                  {filterOptions.map((option) => (
+                    <ProfileButton
+                      key={option.id}
+                      active={settings.filterId === option.id}
+                      onClick={() => {
+                        onSettingsChange((current) => ({
+                          ...current,
+                          filterId: option.id,
+                        }))
+                      }}
+                    >
+                      {option.name}
+                    </ProfileButton>
+                  ))}
                 </div>
               </div>
               {settings.filterId === RANDOM_FILTER_ID ? (
-                <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-amber-200/78">
+                <div className="theme-label mt-3 font-mono text-[11px] uppercase tracking-[0.2em]">
                   В превью без эффекта, случайный фильтр применяется только при съемке.
                 </div>
               ) : null}
@@ -201,7 +201,7 @@ export function CameraMenu({
                     </ProfileButton>
                   ))
                 ) : (
-                  <div className="rounded-[16px] border border-amber-200/14 bg-[#251811] px-4 py-4 text-sm text-amber-50/62">
+                  <div className="theme-card-surface theme-text-soft rounded-[16px] border px-4 py-4 text-sm">
                     Камеры появятся здесь после выдачи разрешения браузеру.
                   </div>
                 )}
@@ -212,7 +212,7 @@ export function CameraMenu({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-[22px] bg-[#d3a062] px-6 py-4 font-mono text-sm uppercase tracking-[0.24em] text-[#2b180d] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-[#e4b77b]"
+                className="theme-primary-action rounded-[22px] border px-6 py-4 font-mono text-sm uppercase tracking-[0.24em] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition hover:brightness-105"
               >
                 Вернуться к камере
               </button>
@@ -221,12 +221,12 @@ export function CameraMenu({
                 <button
                   type="button"
                   onClick={onInstall}
-                  className="rounded-[22px] border border-amber-200/18 bg-[#241710] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-amber-100 transition hover:border-amber-200/38"
+                  className="theme-secondary-action rounded-[22px] border px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] transition hover:brightness-110"
                 >
                   Установить приложение
                 </button>
               ) : (
-                <div className="rounded-[22px] border border-amber-200/14 bg-[#241710] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-amber-50/70">
+                <div className="theme-secondary-action theme-text-soft rounded-[22px] border px-6 py-4 font-mono text-sm uppercase tracking-[0.2em]">
                   {isInstalled ? 'Приложение установлено' : 'Веб-режим'}
                 </div>
               )}
@@ -250,16 +250,16 @@ function ControlCard({
   children: ReactNode
 }) {
   return (
-    <section className="min-w-0 rounded-[26px] border border-amber-200/16 bg-[#241710] p-5 shadow-[inset_0_0_0_1px_rgba(255,214,170,0.03)]">
+    <section className="theme-card-surface min-w-0 rounded-[26px] border p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-amber-200/74">
+        <div className="theme-label font-mono text-[11px] uppercase tracking-[0.34em]">
           {label}
         </div>
-        <div className="max-w-[52%] text-right font-mono text-sm uppercase tracking-[0.2em] text-amber-200">
+        <div className="max-w-[52%] text-right font-mono text-sm uppercase tracking-[0.2em] text-[color:var(--theme-text)]">
           {value}
         </div>
       </div>
-      <div className="mt-3 text-sm leading-6 text-amber-50/70">{helper}</div>
+      <div className="theme-text-soft mt-3 text-sm leading-6">{helper}</div>
       <div className="mt-5">{children}</div>
     </section>
   )
@@ -287,7 +287,7 @@ function StripeSlider({
 
   return (
     <div
-      className="grid gap-px overflow-hidden rounded-[8px] bg-[#493224] p-1"
+      className="theme-stripe-track grid gap-px overflow-hidden rounded-[8px] p-1"
       style={{ gridTemplateColumns: `repeat(${segments}, minmax(0, 1fr))` }}
       role="slider"
       aria-label={label}
@@ -305,8 +305,8 @@ function StripeSlider({
             onClick={() => onChange(Number(nextValue.toFixed(2)))}
             className={`h-6 rounded-[2px] transition ${
               index < activeBars
-                ? 'bg-[#d3a062] hover:bg-[#e4b77b]'
-                : 'bg-[#6c4a35] hover:bg-[#82593f]'
+                ? 'theme-stripe-active hover:brightness-105'
+                : 'theme-stripe-inactive hover:brightness-110'
             }`}
           />
         )
@@ -329,9 +329,7 @@ function ProfileButton({
       type="button"
       onClick={onClick}
       className={`min-w-0 shrink-0 rounded-[16px] border px-3 py-4 text-left font-mono text-[11px] uppercase leading-5 tracking-[0.16em] transition ${
-        active
-          ? 'border-amber-200 bg-[#d3a062] text-[#2b180d]'
-          : 'border-amber-200/18 bg-[#322117] text-amber-100 hover:border-amber-200/40'
+        active ? 'theme-chip-strong' : 'theme-chip-soft hover:brightness-110'
       }`}
     >
       {children}
@@ -353,9 +351,7 @@ function SegmentButton({
       type="button"
       onClick={onClick}
       className={`rounded-[18px] border px-4 py-4 font-mono text-sm uppercase tracking-[0.2em] transition ${
-        active
-          ? 'border-amber-200 bg-[#d3a062] text-[#2b180d]'
-          : 'border-amber-200/16 bg-[#322117] text-amber-100 hover:border-amber-200/40'
+        active ? 'theme-chip-strong' : 'theme-chip-soft hover:brightness-110'
       }`}
     >
       {children}
