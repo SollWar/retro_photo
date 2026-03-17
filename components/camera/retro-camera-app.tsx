@@ -31,6 +31,7 @@ export function RetroCameraApp() {
     downloadAnchorRef,
     devices,
     activeDeviceId,
+    previewAspectRatio,
     isReady,
     isStarting,
     error,
@@ -81,7 +82,13 @@ export function RetroCameraApp() {
       <canvas ref={previewCanvasRef} className="hidden" />
 
       <section className="flex min-h-[100dvh] items-center justify-center bg-black p-3 sm:p-4">
-        <div className="relative h-[min(100dvh-24px,calc((100vw-24px)*1.7))] w-full max-w-[min(560px,100vw-24px)] overflow-hidden rounded-[26px] bg-black shadow-[0_0_0_1px_rgba(255,255,255,0.08)] sm:h-[min(100dvh-32px,calc((100vw-32px)*1.65))] sm:max-w-[620px]">
+        <div
+          className="relative w-full max-w-[min(720px,100vw-24px)] overflow-hidden rounded-[26px] bg-black shadow-[0_0_0_1px_rgba(255,255,255,0.08)] sm:max-w-[760px]"
+          style={{
+            aspectRatio: `${previewAspectRatio}`,
+            maxHeight: 'calc(100dvh - 24px)',
+          }}
+        >
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full object-cover"
@@ -138,7 +145,7 @@ export function RetroCameraApp() {
                 return
               }
 
-              capturePhoto(filterForCapture, settings)
+              void capturePhoto(filterForCapture, settings)
             }}
             disabled={!isReady || isStarting}
             className="absolute bottom-4 left-[40%] z-20 h-20 w-20 rounded-full border-4 border-white bg-black/35 text-white shadow-[0_0_30px_rgba(255,255,255,0.15)] backdrop-blur-sm disabled:opacity-50"

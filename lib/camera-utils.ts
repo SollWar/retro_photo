@@ -99,3 +99,44 @@ export function drawPhotoOverlay(
   ctx.fillText(stamp, 0, 0)
   ctx.restore()
 }
+
+export async function drawBlobToCanvas(
+  blob: Blob,
+  canvas: HTMLCanvasElement,
+): Promise<CanvasRenderingContext2D | null> {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return null
+  }
+
+  if ('createImageBitmap' in window) {
+    const bitmap = await createImageBitmap(blob)
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    ctx.clearRect(0, 0, bitmap.width, bitmap.height)
+    ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height)
+    bitmap.close()
+    return ctx
+  }
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Failed to load captured image blob'))
+    }
+    img.src = objectUrl
+  })
+
+  canvas.width = image.naturalWidth
+  canvas.height = image.naturalHeight
+  ctx.clearRect(0, 0, image.naturalWidth, image.naturalHeight)
+  ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight)
+
+  return ctx
+}
