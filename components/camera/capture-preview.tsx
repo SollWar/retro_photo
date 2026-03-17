@@ -2,6 +2,7 @@ type CapturePreviewProps = {
   imageUrl: string
   filterName: string
   resolutionText: string
+  aspectRatio: number
   isBusy: boolean
   onSave: () => void
   onShare: () => void
@@ -12,6 +13,7 @@ export function CapturePreview({
   imageUrl,
   filterName,
   resolutionText,
+  aspectRatio,
   isBusy,
   onSave,
   onShare,
@@ -20,13 +22,20 @@ export function CapturePreview({
   return (
     <div className="theme-shell fixed inset-0 z-50 overflow-hidden">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
-        <div className="theme-preview-surface relative flex-1 overflow-hidden rounded-[34px] border">
-          <img
-            src={imageUrl}
-            alt="Снятая ретро-фотография"
-            className="h-full w-full object-contain"
-          />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(0deg,rgba(2,9,10,0.9),transparent)]" />
+        <div className="relative min-h-0 flex-1">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="theme-preview-surface relative w-full max-h-full max-w-full overflow-hidden rounded-[34px] border"
+              style={{ aspectRatio: `${aspectRatio}` }}
+            >
+              <img
+                src={imageUrl}
+                alt="Снятая ретро-фотография"
+                className="h-full w-full object-contain"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(0deg,rgba(2,9,10,0.9),transparent)]" />
+            </div>
+          </div>
         </div>
 
         <div className="theme-panel-surface mt-3 rounded-[30px] border p-5">

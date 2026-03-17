@@ -28,6 +28,7 @@ type CapturedShot = {
   filterId: string
   filterName: string
   resolutionText: string
+  aspectRatio: number
 }
 
 function createFilename() {
@@ -107,6 +108,7 @@ export function RetroCameraApp() {
       filterId: filterForCapture.id,
       filterName: filterForCapture.name,
       resolutionText: `Фото ${frame.width}x${frame.height}`,
+      aspectRatio: frame.width > 0 && frame.height > 0 ? frame.width / frame.height : previewAspectRatio,
     })
   }
 
@@ -168,45 +170,52 @@ export function RetroCameraApp() {
       <canvas ref={previewCanvasRef} className="hidden" />
 
       <section className="theme-shell mx-auto flex h-[100dvh] w-full max-w-[860px] flex-col overflow-hidden px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] sm:px-4">
-        <div className="theme-preview-surface relative min-h-0 flex-1 overflow-hidden rounded-[34px] border">
-          <div className="theme-preview-overlay pointer-events-none absolute inset-0" />
-          <video
-            ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover opacity-[0.94]"
-            autoPlay
-            muted
-            playsInline
-            style={{ filter: previewFilter?.filter ?? 'none' }}
-          />
-
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_32%,rgba(0,0,0,0.54)_100%)]" />
-          {previewFilter ? (
+        <div className="relative min-h-0 flex-1">
+          <div className="absolute inset-0 flex items-center justify-center">
             <div
-              className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${previewFilter.lightLeak}`}
-            />
-          ) : null}
-          {previewFilter ? (
-            <PreviewEffects
-              filter={previewFilter}
-              grainBoost={settings.grainBoost}
-              vignetteBoost={settings.vignetteBoost}
-            />
-          ) : null}
+              className="theme-preview-surface relative w-full max-h-full max-w-full overflow-hidden rounded-[34px] border"
+              style={{ aspectRatio: `${previewAspectRatio}` }}
+            >
+              <div className="theme-preview-overlay pointer-events-none absolute inset-0" />
+              <video
+                ref={videoRef}
+                className="absolute inset-0 h-full w-full object-cover opacity-[0.94]"
+                autoPlay
+                muted
+                playsInline
+                style={{ filter: previewFilter?.filter ?? 'none' }}
+              />
 
-          <CameraHud
-            showTimestamp={settings.showTimestamp}
-            dateTint={previewFilter?.dateTint ?? '#f0d1a2'}
-            isStarting={isStarting}
-            error={error}
-          />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_32%,rgba(0,0,0,0.54)_100%)]" />
+              {previewFilter ? (
+                <div
+                  className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${previewFilter.lightLeak}`}
+                />
+              ) : null}
+              {previewFilter ? (
+                <PreviewEffects
+                  filter={previewFilter}
+                  grainBoost={settings.grainBoost}
+                  vignetteBoost={settings.vignetteBoost}
+                />
+              ) : null}
 
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen(true)}
-            className="theme-status-panel theme-text-soft absolute right-3 top-3 z-20 rounded-[16px] border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.26em] backdrop-blur-sm"
-          >
-            Меню
-          </button>
+              <CameraHud
+                showTimestamp={settings.showTimestamp}
+                dateTint={previewFilter?.dateTint ?? '#f0d1a2'}
+                isStarting={isStarting}
+                error={error}
+              />
+
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(true)}
+                className="theme-status-panel theme-text-soft absolute right-3 top-3 z-20 rounded-[16px] border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.26em] backdrop-blur-sm"
+              >
+                Меню
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="theme-panel-surface mt-3 shrink-0 rounded-[26px] border p-3 sm:p-4">
@@ -265,6 +274,7 @@ export function RetroCameraApp() {
             imageUrl={capturedShot.url}
             filterName={capturedShot.filterName}
             resolutionText={capturedShot.resolutionText}
+            aspectRatio={capturedShot.aspectRatio}
             isBusy={isCaptureActionPending}
             onSave={() => {
               void handleSave()
