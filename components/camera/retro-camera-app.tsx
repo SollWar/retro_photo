@@ -118,17 +118,12 @@ export function RetroCameraApp() {
     setCapturedShot(null)
   }
 
-  async function handleSave() {
+  function handleSave() {
     if (!capturedShot) {
       return
     }
 
-    setIsCaptureActionPending(true)
-    const outcome = await shareBlob(capturedShot.blob, capturedShot.filename, 'Снимок ретро-камеры')
-    if (outcome === 'unsupported') {
-      downloadBlob(capturedShot.blob, capturedShot.filename)
-    }
-    setIsCaptureActionPending(false)
+    downloadBlob(capturedShot.blob, capturedShot.filename)
   }
 
   async function handleShare() {
@@ -167,11 +162,11 @@ export function RetroCameraApp() {
   return (
     <main
       style={interfaceTheme}
-      className="min-h-screen overflow-hidden bg-[color:var(--theme-bg)] text-[color:var(--theme-text)]"
+      className="h-[100dvh] overflow-hidden bg-[color:var(--theme-bg)] text-[color:var(--theme-text)]"
     >
       <canvas ref={previewCanvasRef} className="hidden" />
 
-      <section className="theme-shell mx-auto flex h-[100dvh] w-full max-w-[860px] flex-col overflow-hidden px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] sm:px-4">
+      <section className="theme-shell mx-auto flex h-full w-full max-w-[860px] flex-col overflow-hidden px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-[calc(env(safe-area-inset-top)+10px)] sm:px-4">
         <div className="relative min-h-0 flex-1">
           <div className="absolute inset-0 flex items-center justify-center">
             <div
@@ -280,7 +275,7 @@ export function RetroCameraApp() {
             aspectRatio={capturedShot.aspectRatio}
             isBusy={isCaptureActionPending}
             onSave={() => {
-              void handleSave()
+              handleSave()
             }}
             onShare={() => {
               void handleShare()
