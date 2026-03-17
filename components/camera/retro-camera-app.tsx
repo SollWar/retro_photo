@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { useBattery } from '@/hooks/use-battery'
 import { useCamera } from '@/hooks/use-camera'
-import { useClock } from '@/hooks/use-clock'
 import { useInstallPrompt } from '@/hooks/use-install-prompt'
 import { downloadBlob, shareBlob } from '@/lib/camera-utils'
 import { getCameraTheme } from '@/lib/camera-theme'
@@ -55,8 +53,6 @@ export function RetroCameraApp() {
     startCamera,
     capturePhoto,
   } = useCamera()
-  const clockText = useClock()
-  const { batteryLevel, isCharging } = useBattery()
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
 
   const selectedFilter = useMemo(() => getFilterById(settings.filterId), [settings.filterId])
@@ -75,19 +71,14 @@ export function RetroCameraApp() {
       }),
     [capturedShot, isRandomFilterMode, themeFilter],
   )
-  const grainPercent = Math.round(((settings.grainBoost - 0.55) / (1.35 - 0.55)) * 100)
-  const vignettePercent = Math.round(((settings.vignetteBoost - 0.45) / (1.45 - 0.45)) * 100)
 
   const cameraLabel =
     devices.find((device) => device.deviceId === activeDeviceId)?.label ||
     `Камера ${devices.length || 1}`
-  const batteryText =
-    batteryLevel === null ? 'Заряд --' : `Заряд ${batteryLevel}%${isCharging ? ' +' : ''}`
   const modeText = isRandomFilterMode ? RANDOM_FILTER_OPTION.name : activeFilter.name
   const resolutionText = photoResolution
     ? `Фото ${photoResolution.width}x${photoResolution.height}`
     : `Формат ${Math.round(previewAspectRatio * 100) / 100}:1`
-  const statusText = isReady ? 'Готово к съемке' : 'Запуск камеры'
 
   useEffect(() => {
     return () => {
@@ -153,6 +144,22 @@ export function RetroCameraApp() {
     setIsCaptureActionPending(false)
   }
 
+  async function handleCycleCamera() {
+    if (devices.length <= 1) {
+      return
+    }
+
+    const activeIndex = devices.findIndex((device) => device.deviceId === activeDeviceId)
+    const nextIndex = activeIndex >= 0 ? (activeIndex + 1) % devices.length : 0
+    const nextDevice = devices[nextIndex]
+
+    if (!nextDevice) {
+      return
+    }
+
+    await startCamera(nextDevice.deviceId)
+  }
+
   return (
     <main
       style={interfaceTheme}
@@ -205,30 +212,21 @@ export function RetroCameraApp() {
         <div className="theme-panel-surface mt-3 shrink-0 rounded-[26px] border p-3 sm:p-4">
           <div className="flex flex-wrap gap-2">
             <InfoPill strong>{modeText}</InfoPill>
-            <InfoPill>{clockText}</InfoPill>
-            <InfoPill>{batteryText}</InfoPill>
             <InfoPill>{resolutionText}</InfoPill>
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-2">
-            <CompactPill label="Камера" value={cameraLabel} />
-            <CompactPill label="Зерно" value={`${grainPercent}%`} />
-            <CompactPill label="Виньетка" value={`${vignettePercent}%`} />
-            <CompactPill
-              label="Дата"
-              value={settings.showTimestamp ? 'Вкл' : 'Выкл'}
-            />
-            <CompactPill label="Статус" value={statusText} />
+            <InfoPill>{cameraLabel}</InfoPill>
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_122px] sm:items-center">
-            <div className="theme-card-surface theme-text-soft rounded-[18px] border px-4 py-3 text-sm">
-              {error
-                ? 'Камера недоступна. Проверь разрешения браузера.'
-                : isReady
-                  ? 'Все параметры под рукой, можно снимать.'
-                  : 'Подготавливаем камеру и доступные объективы.'}
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                void handleCycleCamera()
+              }}
+              disabled={devices.length <= 1 || isStarting}
+              className="theme-secondary-action h-16 w-full rounded-[20px] border px-4 font-mono text-sm uppercase tracking-[0.16em] transition hover:brightness-110 disabled:opacity-50"
+            >
+              {devices.length > 1 ? 'Сменить камеру' : 'Одна камера'}
+            </button>
 
             <button
               type="button"
@@ -296,23 +294,6 @@ function InfoPill({
       }`}
     >
       {children}
-    </div>
-  )
-}
-
-function CompactPill({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
-  return (
-    <div className="theme-chip-soft flex items-center gap-2 rounded-full border px-3 py-2 shadow-[inset_0_0_0_1px_var(--theme-border-faint)]">
-      <div className="theme-label font-mono text-[9px] uppercase tracking-[0.2em]">
-        {label}
-      </div>
-      <div className="text-sm leading-5 text-[color:var(--theme-text)]">{value}</div>
     </div>
   )
 }
