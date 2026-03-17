@@ -140,3 +140,53 @@ export async function drawBlobToCanvas(
 
   return ctx
 }
+
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type = 'image/jpeg',
+  quality = 0.95,
+) {
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality)
+  })
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = filename
+  anchor.click()
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+}
+
+export async function shareBlob(blob: Blob, filename: string, title: string) {
+  if (typeof navigator === 'undefined' || !navigator.share) {
+    return 'unsupported' as const
+  }
+
+  try {
+    const file = new File([blob], filename, { type: blob.type || 'image/jpeg' })
+    const shareData: ShareData = {
+      title,
+      files: [file],
+    }
+
+    const navigatorWithCanShare = navigator as Navigator & {
+      canShare?: (data?: ShareData) => boolean
+    }
+
+    if (navigatorWithCanShare.canShare && !navigatorWithCanShare.canShare(shareData)) {
+      return 'unsupported' as const
+    }
+
+    await navigator.share(shareData)
+    return 'shared' as const
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return 'cancelled' as const
+    }
+
+    return 'unsupported' as const
+  }
+}

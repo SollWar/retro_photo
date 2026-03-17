@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 
-import { drawBlobToCanvas, drawPhotoOverlay, stopMediaStream } from '@/lib/camera-utils'
-import type { CaptureSettings, FilterDefinition } from '@/lib/types'
+import {
+  canvasToBlob,
+  drawBlobToCanvas,
+  drawPhotoOverlay,
+  stopMediaStream,
+} from '@/lib/camera-utils'
+import type {
+  CapturedFrame,
+  CaptureResolution,
+  CaptureSettings,
+  FilterDefinition,
+} from '@/lib/types'
 
 type ImageCaptureLike = {
   getPhotoCapabilities?: () => Promise<{
@@ -14,93 +24,110 @@ type ImageCaptureLike = {
 type UseCameraResult = {
   videoRef: RefObject<HTMLVideoElement | null>
   previewCanvasRef: RefObject<HTMLCanvasElement | null>
-  downloadAnchorRef: RefObject<HTMLAnchorElement | null>
   devices: MediaDeviceInfo[]
   activeDeviceId: string | null
   previewAspectRatio: number
+  photoResolution: CaptureResolution | null
   isReady: boolean
   isStarting: boolean
   error: string | null
   startCamera: (deviceId?: string) => Promise<void>
-  capturePhoto: (filter: FilterDefinition, settings: CaptureSettings) => Promise<void>
+  capturePhoto: (
+    filter: FilterDefinition,
+    settings: CaptureSettings,
+  ) => Promise<CapturedFrame | null>
+}
+
+const IDEAL_CAPTURE_WIDTH = 4096
+const IDEAL_CAPTURE_HEIGHT = 3072
+
+function selectMaxFourByThreeSize(capabilities?: {
+  imageWidth?: { min?: number; max?: number; step?: number }
+  imageHeight?: { min?: number; max?: number; step?: number }
+}) {
+  const maxWidth = capabilities?.imageWidth?.max ?? IDEAL_CAPTURE_WIDTH
+  const maxHeight = capabilities?.imageHeight?.max ?? IDEAL_CAPTURE_HEIGHT
+  const minWidth = capabilities?.imageWidth?.min ?? 640
+  const minHeight = capabilities?.imageHeight?.min ?? 480
+  const widthStep = Math.max(1, capabilities?.imageWidth?.step ?? 1)
+  const heightStep = Math.max(1, capabilities?.imageHeight?.step ?? 1)
+
+  let width = Math.min(maxWidth, Math.floor((maxHeight * 4) / 3))
+  let height = Math.floor((width * 3) / 4)
+
+  width -= width % widthStep
+  height -= height % heightStep
+
+  if (height > maxHeight) {
+    height = maxHeight - (maxHeight % heightStep)
+    width = Math.floor((height * 4) / 3)
+    width -= width % widthStep
+  }
+
+  if (width < minWidth || height < minHeight) {
+    const fallbackHeight = Math.max(minHeight, 480)
+    const normalizedHeight =
+      fallbackHeight + ((heightStep - (fallbackHeight % heightStep)) % heightStep)
+    const normalizedWidth = Math.max(minWidth, Math.floor((normalizedHeight * 4) / 3))
+
+    return {
+      width: normalizedWidth,
+      height: normalizedHeight,
+    }
+  }
+
+  return { width, height }
+}
+
+async function getPreferredPhotoSize(
+  track: MediaStreamTrack,
+  fallbackWidth: number,
+  fallbackHeight: number,
+) {
+  if (!('ImageCapture' in window)) {
+    return { width: fallbackWidth, height: fallbackHeight }
+  }
+
+  try {
+    const imageCapture = new (
+      window as Window & { ImageCapture: new (track: MediaStreamTrack) => ImageCaptureLike }
+    ).ImageCapture(track)
+    const capabilities = await imageCapture.getPhotoCapabilities?.()
+    return selectMaxFourByThreeSize(capabilities)
+  } catch {
+    return { width: fallbackWidth, height: fallbackHeight }
+  }
 }
 
 export function useCamera(): UseCameraResult {
   const videoRef = useRef<HTMLVideoElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
-  const downloadAnchorRef = useRef<HTMLAnchorElement>(null)
   const activeStreamRef = useRef<MediaStream | null>(null)
 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
   const [previewAspectRatio, setPreviewAspectRatio] = useState(3 / 4)
+  const [photoResolution, setPhotoResolution] = useState<CaptureResolution | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [isStarting, setIsStarting] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [lastCaptureUrl, setLastCaptureUrl] = useState<string | null>(null)
 
-  function selectMaxFourByThreeSize(capabilities?: {
-    imageWidth?: { min?: number; max?: number; step?: number }
-    imageHeight?: { min?: number; max?: number; step?: number }
-  }) {
-    const maxWidth = capabilities?.imageWidth?.max ?? 4096
-    const maxHeight = capabilities?.imageHeight?.max ?? 3072
-    const minWidth = capabilities?.imageWidth?.min ?? 640
-    const minHeight = capabilities?.imageHeight?.min ?? 480
-    const widthStep = Math.max(1, capabilities?.imageWidth?.step ?? 1)
-    const heightStep = Math.max(1, capabilities?.imageHeight?.step ?? 1)
-
-    let width = Math.min(maxWidth, Math.floor((maxHeight * 4) / 3))
-    let height = Math.floor((width * 3) / 4)
-
-    width -= width % widthStep
-    height -= height % heightStep
-
-    if (height > maxHeight) {
-      height = maxHeight - (maxHeight % heightStep)
-      width = Math.floor((height * 4) / 3)
-      width -= width % widthStep
-    }
-
-    if (width < minWidth || height < minHeight) {
-      const fallbackHeight = Math.max(minHeight, 480)
-      const normalizedHeight = fallbackHeight + ((heightStep - (fallbackHeight % heightStep)) % heightStep)
-      const normalizedWidth = Math.max(
-        minWidth,
-        Math.floor((normalizedHeight * 4) / 3),
-      )
-
-      return {
-        width: normalizedWidth,
-        height: normalizedHeight,
-      }
-    }
-
-    return { width, height }
-  }
-
-  async function updatePreviewAspectRatio(stream: MediaStream) {
+  async function updatePreviewState(stream: MediaStream) {
     const track = stream.getVideoTracks()[0]
     const settings = track?.getSettings()
     const videoWidth = settings?.width ?? 1080
     const videoHeight = settings?.height ?? 1440
-    let photoWidth = videoWidth
-    let photoHeight = videoHeight
+    const photoSize = track
+      ? await getPreferredPhotoSize(track, videoWidth, videoHeight)
+      : { width: videoWidth, height: videoHeight }
 
-    if ('ImageCapture' in window && track) {
-      try {
-        const imageCapture = new (window as Window & { ImageCapture: new (track: MediaStreamTrack) => ImageCaptureLike }).ImageCapture(track)
-        const capabilities = await imageCapture.getPhotoCapabilities?.()
-        const bestSize = selectMaxFourByThreeSize(capabilities)
-        photoWidth = bestSize.width
-        photoHeight = bestSize.height
-      } catch {
-        // Ignore unsupported ImageCapture capabilities.
-      }
-    }
-
-    const photoRatio = photoWidth > 0 && photoHeight > 0 ? photoWidth / photoHeight : 4 / 3
+    const photoRatio =
+      photoSize.width > 0 && photoSize.height > 0
+        ? photoSize.width / photoSize.height
+        : 4 / 3
     const isPortraitPreview = videoHeight >= videoWidth
+
+    setPhotoResolution(photoSize)
     setPreviewAspectRatio(isPortraitPreview ? 1 / photoRatio : photoRatio)
   }
 
@@ -115,7 +142,7 @@ export function useCamera(): UseCameraResult {
 
     const track = stream.getVideoTracks()[0]
     setActiveDeviceId(track.getSettings().deviceId ?? requestedDeviceId ?? null)
-    await updatePreviewAspectRatio(stream)
+    await updatePreviewState(stream)
     setIsReady(true)
   }
 
@@ -124,14 +151,6 @@ export function useCamera(): UseCameraResult {
       stopMediaStream(activeStreamRef.current)
     }
   }, [])
-
-  useEffect(() => {
-    return () => {
-      if (lastCaptureUrl) {
-        URL.revokeObjectURL(lastCaptureUrl)
-      }
-    }
-  }, [lastCaptureUrl])
 
   useEffect(() => {
     async function bootstrapCamera() {
@@ -148,8 +167,8 @@ export function useCamera(): UseCameraResult {
         const initialStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: 'environment' },
-            width: { ideal: 4096 },
-            height: { ideal: 3072 },
+            width: { ideal: IDEAL_CAPTURE_WIDTH },
+            height: { ideal: IDEAL_CAPTURE_HEIGHT },
           },
           audio: false,
         })
@@ -157,9 +176,7 @@ export function useCamera(): UseCameraResult {
         await attachStream(initialStream)
 
         const availableDevices = await navigator.mediaDevices.enumerateDevices()
-        const videoInputs = availableDevices.filter(
-          (device) => device.kind === 'videoinput',
-        )
+        const videoInputs = availableDevices.filter((device) => device.kind === 'videoinput')
 
         setDevices(videoInputs)
 
@@ -201,13 +218,13 @@ export function useCamera(): UseCameraResult {
         video: deviceId
           ? {
               deviceId: { exact: deviceId },
-              width: { ideal: 4096 },
-              height: { ideal: 3072 },
+              width: { ideal: IDEAL_CAPTURE_WIDTH },
+              height: { ideal: IDEAL_CAPTURE_HEIGHT },
             }
           : {
               facingMode: { ideal: 'environment' },
-              width: { ideal: 4096 },
-              height: { ideal: 3072 },
+              width: { ideal: IDEAL_CAPTURE_WIDTH },
+              height: { ideal: IDEAL_CAPTURE_HEIGHT },
             },
         audio: false,
       })
@@ -220,23 +237,30 @@ export function useCamera(): UseCameraResult {
     }
   }
 
-  async function capturePhoto(filter: FilterDefinition, settings: CaptureSettings) {
+  async function capturePhoto(
+    filter: FilterDefinition,
+    settings: CaptureSettings,
+  ): Promise<CapturedFrame | null> {
     const video = videoRef.current
     const canvas = previewCanvasRef.current
-    const anchor = downloadAnchorRef.current
     const track = activeStreamRef.current?.getVideoTracks()[0] ?? null
 
-    if (!video || !canvas || !anchor) {
-      return
+    if (!video || !canvas) {
+      return null
     }
 
     let blobFromCamera: Blob | null = null
 
     if ('ImageCapture' in window && track) {
       try {
-        const imageCapture = new (window as Window & { ImageCapture: new (track: MediaStreamTrack) => ImageCaptureLike }).ImageCapture(track)
-        const capabilities = await imageCapture.getPhotoCapabilities?.()
-        const bestSize = selectMaxFourByThreeSize(capabilities)
+        const imageCapture = new (
+          window as Window & { ImageCapture: new (track: MediaStreamTrack) => ImageCaptureLike }
+        ).ImageCapture(track)
+        const bestSize = await getPreferredPhotoSize(
+          track,
+          video.videoWidth || IDEAL_CAPTURE_WIDTH,
+          video.videoHeight || IDEAL_CAPTURE_HEIGHT,
+        )
         blobFromCamera = await imageCapture.takePhoto({
           imageWidth: bestSize.width,
           imageHeight: bestSize.height,
@@ -249,7 +273,7 @@ export function useCamera(): UseCameraResult {
     if (blobFromCamera) {
       const ctx = await drawBlobToCanvas(blobFromCamera, canvas)
       if (!ctx) {
-        return
+        return null
       }
 
       const sourceCanvas = document.createElement('canvas')
@@ -257,7 +281,7 @@ export function useCamera(): UseCameraResult {
       sourceCanvas.height = canvas.height
       const sourceCtx = sourceCanvas.getContext('2d')
       if (!sourceCtx) {
-        return
+        return null
       }
 
       sourceCtx.drawImage(canvas, 0, 0)
@@ -268,51 +292,43 @@ export function useCamera(): UseCameraResult {
       drawPhotoOverlay(ctx, canvas.width, canvas.height, filter, settings)
     } else {
       if (video.videoWidth === 0 || video.videoHeight === 0) {
-        return
+        return null
       }
 
       const ctx = canvas.getContext('2d')
       if (!ctx) {
-        return
+        return null
       }
 
-      const width = video.videoWidth
-      const height = video.videoHeight
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
 
-      canvas.width = width
-      canvas.height = height
-
-      ctx.clearRect(0, 0, width, height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.filter = filter.filter
-      ctx.drawImage(video, 0, 0, width, height)
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
       ctx.filter = 'none'
-      drawPhotoOverlay(ctx, width, height, filter, settings)
+      drawPhotoOverlay(ctx, canvas.width, canvas.height, filter, settings)
     }
 
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        return
-      }
+    const blob = await canvasToBlob(canvas, 'image/jpeg', 0.95)
+    if (!blob) {
+      return null
+    }
 
-      if (lastCaptureUrl) {
-        URL.revokeObjectURL(lastCaptureUrl)
-      }
-
-      const objectUrl = URL.createObjectURL(blob)
-      setLastCaptureUrl(objectUrl)
-      anchor.href = objectUrl
-      anchor.download = `retro-shot-${Date.now()}.jpg`
-      anchor.click()
-    }, 'image/jpeg', 0.95)
+    return {
+      blob,
+      width: canvas.width,
+      height: canvas.height,
+    }
   }
 
   return {
     videoRef,
     previewCanvasRef,
-    downloadAnchorRef,
     devices,
     activeDeviceId,
     previewAspectRatio,
+    photoResolution,
     isReady,
     isStarting,
     error,

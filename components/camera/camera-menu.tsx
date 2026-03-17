@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react'
+import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from 'react'
 
 import {
   FILTERS,
@@ -7,41 +7,39 @@ import {
   getFilterById,
   isRandomFilterId,
 } from '@/lib/filters'
-import { grainOptions, vignetteOptions } from '@/lib/options'
-import type { CaptureSettings, MenuView } from '@/lib/types'
-
-import { MenuButton } from './menu-button'
-import { SelectButton } from './select-button'
+import type { CaptureSettings } from '@/lib/types'
 
 type CameraMenuProps = {
   isOpen: boolean
-  menuView: MenuView
   settings: CaptureSettings
-  cameraLabel: string
   activeDeviceId: string | null
   devices: MediaDeviceInfo[]
   canInstall: boolean
   isInstalled: boolean
   onClose: () => void
-  onBack: () => void
-  onMenuViewChange: (view: MenuView) => void
   onSettingsChange: Dispatch<SetStateAction<CaptureSettings>>
   onCameraSelect: (deviceId: string) => void
   onInstall: () => void
 }
 
+const filterOptions = [RANDOM_FILTER_OPTION, ...FILTERS]
+const GRAIN_MIN = 0.55
+const GRAIN_MAX = 1.35
+const VIGNETTE_MIN = 0.45
+const VIGNETTE_MAX = 1.45
+
+function toPercent(value: number, min: number, max: number) {
+  return Math.round(((value - min) / (max - min)) * 100)
+}
+
 export function CameraMenu({
   isOpen,
-  menuView,
   settings,
-  cameraLabel,
   activeDeviceId,
   devices,
   canInstall,
   isInstalled,
   onClose,
-  onBack,
-  onMenuViewChange,
   onSettingsChange,
   onCameraSelect,
   onInstall,
@@ -50,291 +48,279 @@ export function CameraMenu({
     return null
   }
 
-  const selectedFilterName =
+  const selectedFilter =
     isRandomFilterId(settings.filterId)
-      ? RANDOM_FILTER_OPTION.name
-      : getFilterById(settings.filterId)?.name ?? FILTERS[0].name
-
-  const sensorItems = [
-    {
-      label: 'Noise Floor',
-      value: Math.round(settings.vignetteBoost / 1.45 * 100),
-      onClick: () => onMenuViewChange('vignette'),
-    },
-    {
-      label: 'Silver Grain',
-      value: Math.round(settings.grainBoost / 1.35 * 100),
-      onClick: () => onMenuViewChange('grain'),
-    },
-    {
-      label: 'Color Bleed',
-      value: isRandomFilterId(settings.filterId) ? 100 : Math.min(100, 42 + selectedFilterName.length * 3),
-      onClick: () => onMenuViewChange('filter'),
-    },
-  ]
-
-  const mainTitle = menuView === 'main' ? 'Sensor Emulation' : 'Select Option'
+      ? RANDOM_FILTER_OPTION
+      : getFilterById(settings.filterId) ?? FILTERS[0]
+  const selectedFilterIndex = Math.max(
+    0,
+    filterOptions.findIndex((option) => option.id === settings.filterId),
+  )
+  const grainPercent = toPercent(settings.grainBoost, GRAIN_MIN, GRAIN_MAX)
+  const vignettePercent = toPercent(settings.vignetteBoost, VIGNETTE_MIN, VIGNETTE_MAX)
+  const filterPercent =
+    filterOptions.length > 1
+      ? (selectedFilterIndex / (filterOptions.length - 1)) * 100
+      : 100
 
   return (
-    <div className="absolute inset-0 z-30 bg-[linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0.2))]">
-      <div className="absolute inset-x-0 bottom-0 max-h-[72vh] rounded-t-[32px] border-t border-cyan-400/20 bg-[#081f20] shadow-[0_-20px_60px_rgba(0,0,0,0.45)]">
-        <div className="flex justify-center pt-4">
-          <div className="h-2 w-20 rounded-full bg-cyan-400/40" />
-        </div>
-
-        <div className="flex items-center justify-between border-b border-cyan-400/12 px-7 py-6">
-          <div className="flex items-center gap-4">
-            <div className="grid h-10 w-10 place-items-center text-cyan-300">
-              <div className="grid grid-cols-3 gap-1">
-                {Array.from({ length: 9 }).map((_, index) => (
-                  <span
-                    key={index}
-                    className={`block h-1.5 w-1.5 ${index % 2 === 0 ? 'bg-cyan-300' : 'bg-cyan-300/45'}`}
-                  />
-                ))}
+    <div className="fixed inset-0 z-40 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(37,220,224,0.16),transparent_28%),linear-gradient(180deg,#071718,#02090a)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
+        <div className="rounded-[30px] border border-cyan-400/18 bg-[#081f20]/96 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(0,255,255,0.04)] sm:p-6">
+          <div className="flex items-start justify-between gap-4 border-b border-cyan-400/12 pb-5">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-cyan-300/72">
+                Sensor Controls
+              </div>
+              <div className="mt-3 font-mono text-[clamp(26px,5vw,40px)] uppercase tracking-[0.06em] text-white">
+                Camera Setup
+              </div>
+              <div className="mt-3 max-w-[32rem] text-sm leading-6 text-cyan-50/70">
+                Один экран настроек без вложенных меню. Фильтр, текстура и оптика
+                меняются сразу, а превью остается чистым, если включен случайный режим.
               </div>
             </div>
-            <div className="font-mono text-[clamp(24px,4vw,34px)] uppercase tracking-[0.04em] text-white">
-              {mainTitle}
-            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-cyan-400/18 bg-[#0b2324]/82 text-4xl leading-none text-white/92 transition hover:border-cyan-300/38 hover:text-cyan-200"
+            >
+              <span className="-mt-1">×</span>
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-12 w-12 place-items-center rounded-full border border-cyan-400/20 text-4xl leading-none text-white/90 transition hover:border-cyan-300/40 hover:text-cyan-200"
-          >
-            <span className="-mt-1">×</span>
-          </button>
-        </div>
+          <div className="mt-5 grid gap-4">
+            <ControlCard
+              label="Picture Profile"
+              value={selectedFilter.name}
+              helper={selectedFilter.description}
+            >
+              <input
+                type="range"
+                min={0}
+                max={filterOptions.length - 1}
+                step={1}
+                value={selectedFilterIndex}
+                style={{ '--slider-fill': `${filterPercent}%` } as CSSProperties}
+                onChange={(event) => {
+                  const nextOption = filterOptions[Number(event.target.value)]
+                  if (!nextOption) {
+                    return
+                  }
 
-        <div className="max-h-[calc(72vh-108px)] overflow-auto px-6 pb-6 pt-5">
-          {menuView === 'main' ? (
-            <div className="space-y-7">
-              <div className="grid gap-5">
-                {sensorItems.map((item) => (
-                  <SensorCard
-                    key={item.label}
-                    label={item.label}
-                    value={item.value}
-                    onClick={item.onClick}
-                  />
+                  onSettingsChange((current) => ({
+                    ...current,
+                    filterId: nextOption.id,
+                  }))
+                }}
+                className="range-slider w-full"
+              />
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                {filterOptions.map((option) => (
+                  <ChipButton
+                    key={option.id}
+                    active={settings.filterId === option.id}
+                    onClick={() => {
+                      onSettingsChange((current) => ({
+                        ...current,
+                        filterId: option.id,
+                      }))
+                    }}
+                  >
+                    {option.name}
+                  </ChipButton>
                 ))}
               </div>
-
-              <section>
-                <div className="mb-4 font-mono text-sm uppercase tracking-[0.28em] text-cyan-300/70">
-                  Standard Profiles
+              {settings.filterId === RANDOM_FILTER_ID ? (
+                <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-cyan-300/78">
+                  Preview clean, random filter applies only on capture.
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  <ProfileChip
-                    active={settings.filterId === RANDOM_FILTER_ID}
-                    label={RANDOM_FILTER_OPTION.name}
-                    onClick={() => onMenuViewChange('filter')}
-                  />
-                  {FILTERS.map((filter) => (
-                    <ProfileChip
-                      key={filter.id}
-                      active={settings.filterId === filter.id}
-                      label={filter.name}
-                      onClick={() => onMenuViewChange('filter')}
-                    />
-                  ))}
-                </div>
-              </section>
+              ) : null}
+            </ControlCard>
 
-              <div className="grid grid-cols-[1fr_92px] gap-4">
-                <button
-                  type="button"
-                  onClick={() => onMenuViewChange('filter')}
-                  className="rounded-[18px] bg-cyan-400 px-6 py-6 font-mono text-[clamp(20px,3vw,28px)] uppercase tracking-[0.08em] text-[#062021] shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
+            <ControlCard
+              label="Film Grain"
+              value={`${grainPercent}%`}
+              helper="Плотность пленочного шума в превью и на сохраненном кадре."
+            >
+              <input
+                type="range"
+                min={GRAIN_MIN}
+                max={GRAIN_MAX}
+                step={0.05}
+                value={settings.grainBoost}
+                style={{ '--slider-fill': `${grainPercent}%` } as CSSProperties}
+                onChange={(event) => {
+                  onSettingsChange((current) => ({
+                    ...current,
+                    grainBoost: Number(event.target.value),
+                  }))
+                }}
+                className="range-slider w-full"
+              />
+              <ScaleRow activePercent={grainPercent} />
+            </ControlCard>
+
+            <ControlCard
+              label="Edge Vignette"
+              value={`${vignettePercent}%`}
+              helper="Затемнение по краям, чтобы фильтры ощущались плотнее и глубже."
+            >
+              <input
+                type="range"
+                min={VIGNETTE_MIN}
+                max={VIGNETTE_MAX}
+                step={0.05}
+                value={settings.vignetteBoost}
+                style={{ '--slider-fill': `${vignettePercent}%` } as CSSProperties}
+                onChange={(event) => {
+                  onSettingsChange((current) => ({
+                    ...current,
+                    vignetteBoost: Number(event.target.value),
+                  }))
+                }}
+                className="range-slider w-full"
+              />
+              <ScaleRow activePercent={vignettePercent} />
+            </ControlCard>
+
+            <ControlCard
+              label="Date Stamp"
+              value={settings.showTimestamp ? 'Enabled' : 'Disabled'}
+              helper="Штамп даты виден в live preview и впекается в итоговое фото."
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <SegmentButton
+                  active={settings.showTimestamp}
+                  onClick={() => {
+                    onSettingsChange((current) => ({
+                      ...current,
+                      showTimestamp: true,
+                    }))
+                  }}
                 >
-                  Apply Sensor Map
-                </button>
+                  On
+                </SegmentButton>
+                <SegmentButton
+                  active={!settings.showTimestamp}
+                  onClick={() => {
+                    onSettingsChange((current) => ({
+                      ...current,
+                      showTimestamp: false,
+                    }))
+                  }}
+                >
+                  Off
+                </SegmentButton>
+              </div>
+            </ControlCard>
+
+            <ControlCard
+              label="Lens Select"
+              value={devices.length > 1 ? `${devices.length} cameras` : 'Single lens'}
+              helper="Активная камера переключается здесь же, без отдельного подменю."
+            >
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {devices.length > 0 ? (
+                  devices.map((device, index) => (
+                    <ChipButton
+                      key={device.deviceId}
+                      active={device.deviceId === activeDeviceId}
+                      onClick={() => onCameraSelect(device.deviceId)}
+                    >
+                      {device.label || `Camera ${index + 1}`}
+                    </ChipButton>
+                  ))
+                ) : (
+                  <div className="rounded-[16px] border border-cyan-400/14 bg-[#0c2b2d] px-4 py-4 text-sm text-cyan-50/62">
+                    Камеры появятся здесь после выдачи разрешения браузеру.
+                  </div>
+                )}
+              </div>
+            </ControlCard>
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-[22px] bg-cyan-400 px-6 py-4 font-mono text-sm uppercase tracking-[0.24em] text-[#062021] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-cyan-300"
+              >
+                Return To Camera
+              </button>
+
+              {canInstall ? (
                 <button
                   type="button"
                   onClick={onInstall}
-                  className="grid place-items-center rounded-[18px] border border-cyan-400/25 bg-[#103234] font-mono text-xs uppercase tracking-[0.18em] text-cyan-300"
+                  className="rounded-[22px] border border-cyan-400/18 bg-[#0d2b2d] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-cyan-200 transition hover:border-cyan-300/38"
                 >
-                  {isInstalled ? 'ON' : canInstall ? 'APP' : 'WEB'}
+                  Install App
                 </button>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <MenuButton
-                  label="Lens Select"
-                  value={cameraLabel}
-                  onClick={() => onMenuViewChange('camera')}
-                />
-                <MenuButton
-                  label="Date Stamp"
-                  value={settings.showTimestamp ? 'On' : 'Off'}
-                  onClick={() => onMenuViewChange('date')}
-                />
-              </div>
+              ) : (
+                <div className="rounded-[22px] border border-cyan-400/14 bg-[#0d2b2d] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-cyan-100/70">
+                  {isInstalled ? 'App Installed' : 'Web Mode'}
+                </div>
+              )}
             </div>
-          ) : null}
-
-          {menuView === 'filter' ? (
-            <div className="space-y-3">
-              <SelectButton
-                label={RANDOM_FILTER_OPTION.name}
-                detail={RANDOM_FILTER_OPTION.description}
-                selected={settings.filterId === RANDOM_FILTER_ID}
-                onClick={() => {
-                  onSettingsChange((current) => ({
-                    ...current,
-                    filterId: RANDOM_FILTER_ID,
-                  }))
-                  onMenuViewChange('main')
-                }}
-              />
-              {FILTERS.map((filter) => (
-                <SelectButton
-                  key={filter.id}
-                  label={filter.name}
-                  detail={filter.description}
-                  selected={filter.id === settings.filterId}
-                  onClick={() => {
-                    onSettingsChange((current) => ({ ...current, filterId: filter.id }))
-                    onMenuViewChange('main')
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {menuView === 'camera' ? (
-            <div className="space-y-3">
-              {devices.map((device, index) => (
-                <SelectButton
-                  key={device.deviceId}
-                  label={device.label || `Camera ${index + 1}`}
-                  detail={device.deviceId === activeDeviceId ? 'Active lens' : 'Tap to switch'}
-                  selected={device.deviceId === activeDeviceId}
-                  onClick={() => {
-                    onCameraSelect(device.deviceId)
-                    onMenuViewChange('main')
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {menuView === 'grain' ? (
-            <div className="space-y-3">
-              {grainOptions.map((option) => (
-                <SelectButton
-                  key={option}
-                  label={`${option.toFixed(2)}x`}
-                  detail="Film grain intensity"
-                  selected={option === settings.grainBoost}
-                  onClick={() => {
-                    onSettingsChange((current) => ({ ...current, grainBoost: option }))
-                    onMenuViewChange('main')
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {menuView === 'vignette' ? (
-            <div className="space-y-3">
-              {vignetteOptions.map((option) => (
-                <SelectButton
-                  key={option}
-                  label={`${option.toFixed(2)}x`}
-                  detail="Frame edge darkening"
-                  selected={option === settings.vignetteBoost}
-                  onClick={() => {
-                    onSettingsChange((current) => ({ ...current, vignetteBoost: option }))
-                    onMenuViewChange('main')
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {menuView === 'date' ? (
-            <div className="space-y-3">
-              <SelectButton
-                label="Date On"
-                detail="Print date on preview and photo"
-                selected={settings.showTimestamp}
-                onClick={() => {
-                  onSettingsChange((current) => ({ ...current, showTimestamp: true }))
-                  onMenuViewChange('main')
-                }}
-              />
-              <SelectButton
-                label="Date Off"
-                detail="Save clean photo without stamp"
-                selected={!settings.showTimestamp}
-                onClick={() => {
-                  onSettingsChange((current) => ({ ...current, showTimestamp: false }))
-                  onMenuViewChange('main')
-                }}
-              />
-            </div>
-          ) : null}
+          </div>
         </div>
       </div>
-
-      {menuView !== 'main' ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="absolute left-6 top-6 rounded-full border border-cyan-400/25 bg-[#0b2324]/90 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-cyan-200"
-        >
-          Back
-        </button>
-      ) : null}
     </div>
   )
 }
 
-function SensorCard({
+function ControlCard({
   label,
   value,
-  onClick,
+  helper,
+  children,
 }: {
   label: string
-  value: number
-  onClick: () => void
+  value: string
+  helper: string
+  children: ReactNode
 }) {
-  const activeBars = Math.max(1, Math.min(28, Math.round((value / 100) * 28)))
-
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-[24px] border border-cyan-500/28 bg-[#103234] px-5 py-5 text-left shadow-[inset_0_0_0_1px_rgba(0,255,255,0.04)] transition hover:border-cyan-300/40 hover:bg-[#123c3f]"
-    >
-      <div className="mb-5 flex items-center justify-between font-mono text-[clamp(20px,3vw,32px)] uppercase tracking-[0.06em] text-cyan-300">
-        <span>{label}</span>
-        <span>{value}%</span>
+    <section className="rounded-[26px] border border-cyan-400/16 bg-[#0d2b2d] p-5 shadow-[inset_0_0_0_1px_rgba(0,255,255,0.03)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-cyan-300/74">
+          {label}
+        </div>
+        <div className="font-mono text-sm uppercase tracking-[0.2em] text-cyan-300">
+          {value}
+        </div>
       </div>
-      <div
-        className="grid gap-px overflow-hidden rounded-[6px] bg-[#13585a] p-1"
-        style={{ gridTemplateColumns: 'repeat(28, minmax(0, 1fr))' }}
-      >
-        {Array.from({ length: 28 }).map((_, index) => (
-          <span
-            key={index}
-            className={`h-6 rounded-[1px] ${index < activeBars ? 'bg-cyan-400' : 'bg-[#155153]'}`}
-          />
-        ))}
-      </div>
-    </button>
+      <div className="mt-3 text-sm leading-6 text-cyan-50/70">{helper}</div>
+      <div className="mt-5">{children}</div>
+    </section>
   )
 }
 
-function ProfileChip({
-  label,
+function ScaleRow({ activePercent }: { activePercent: number }) {
+  const activeBars = Math.max(1, Math.min(24, Math.round((activePercent / 100) * 24)))
+
+  return (
+    <div
+      className="mt-4 grid gap-px overflow-hidden rounded-[6px] bg-[#11494b] p-1"
+      style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}
+    >
+      {Array.from({ length: 24 }).map((_, index) => (
+        <span
+          key={index}
+          className={`h-4 rounded-[1px] ${index < activeBars ? 'bg-cyan-400' : 'bg-[#155153]'}`}
+        />
+      ))}
+    </div>
+  )
+}
+
+function ChipButton({
+  children,
   active,
   onClick,
 }: {
-  label: string
+  children: ReactNode
   active: boolean
   onClick: () => void
 }) {
@@ -342,13 +328,37 @@ function ProfileChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-[12px] border px-6 py-4 font-mono text-[clamp(16px,2vw,24px)] uppercase tracking-[0.04em] transition ${
+      className={`shrink-0 rounded-[14px] border px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] transition ${
         active
           ? 'border-cyan-300 bg-cyan-400 text-[#082324]'
-          : 'border-cyan-500/35 bg-[#103234] text-cyan-300'
+          : 'border-cyan-400/18 bg-[#103234] text-cyan-200 hover:border-cyan-300/40'
       }`}
     >
-      {label}
+      {children}
+    </button>
+  )
+}
+
+function SegmentButton({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[18px] border px-4 py-4 font-mono text-sm uppercase tracking-[0.2em] transition ${
+        active
+          ? 'border-cyan-300 bg-cyan-400 text-[#082324]'
+          : 'border-cyan-400/16 bg-[#103234] text-cyan-200 hover:border-cyan-300/40'
+      }`}
+    >
+      {children}
     </button>
   )
 }

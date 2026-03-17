@@ -22,6 +22,17 @@ export type CaptureSettings = {
   showTimestamp: boolean
 }
 
+export type CaptureResolution = {
+  width: number
+  height: number
+}
+
+export type CapturedFrame = {
+  blob: Blob
+  width: number
+  height: number
+}
+
 export type BatteryManagerLike = {
   level: number
   charging: boolean
@@ -32,5 +43,3 @@ export type BatteryManagerLike = {
 export type NavigatorWithBattery = Navigator & {
   getBattery?: () => Promise<BatteryManagerLike>
 }
-
-export type MenuView = 'main' | 'filter' | 'camera' | 'grain' | 'vignette' | 'date'
