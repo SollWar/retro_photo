@@ -4,7 +4,7 @@ export const RANDOM_FILTER_ID = 'random-filter'
 
 export const RANDOM_FILTER_OPTION = {
   id: RANDOM_FILTER_ID,
-  name: 'RANDOM FILTER',
+  name: 'СЛУЧАЙНЫЙ ФИЛЬТР',
   description: 'В превью без эффекта, случайный фильтр применяется только при съемке.',
 }
 

@@ -15,14 +15,14 @@ export function SelectButton({
       onClick={onClick}
       className={`w-full rounded-[22px] border px-5 py-5 text-left transition ${
         selected
-          ? 'border-cyan-300 bg-cyan-400 text-[#04191a]'
-          : 'border-cyan-500/30 bg-[#103234] text-cyan-100 hover:border-cyan-300/45 hover:bg-[#123c3f]'
+          ? 'border-amber-200 bg-[#d3a062] text-[#2b180d]'
+          : 'border-amber-200/18 bg-[#2a1b13] text-amber-50 hover:border-amber-200/40 hover:bg-[#342116]'
       }`}
     >
       <div className="font-mono text-base uppercase tracking-[0.12em]">{label}</div>
       <div
         className={`mt-2 font-mono text-xs uppercase tracking-[0.16em] ${
-          selected ? 'text-[#083234]/75' : 'text-cyan-200/60'
+          selected ? 'text-[#5a381f]/80' : 'text-amber-100/60'
         }`}
       >
         {detail}

@@ -4,7 +4,7 @@ export function Meter({ active = 11 }: { active?: number }) {
       {Array.from({ length: 12 }).map((_, index) => (
         <span
           key={index}
-          className={`block w-[3px] ${index < active ? 'bg-cyan-300' : 'bg-cyan-900/80'}`}
+          className={`block w-[3px] ${index < active ? 'bg-amber-200' : 'bg-[#533628]'}`}
           style={{ height: `${4 + (index % 6) * 2}px` }}
         />
       ))}

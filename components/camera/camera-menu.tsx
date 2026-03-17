@@ -1,4 +1,4 @@
-import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 
 import {
   FILTERS,
@@ -52,31 +52,23 @@ export function CameraMenu({
     isRandomFilterId(settings.filterId)
       ? RANDOM_FILTER_OPTION
       : getFilterById(settings.filterId) ?? FILTERS[0]
-  const selectedFilterIndex = Math.max(
-    0,
-    filterOptions.findIndex((option) => option.id === settings.filterId),
-  )
   const grainPercent = toPercent(settings.grainBoost, GRAIN_MIN, GRAIN_MAX)
   const vignettePercent = toPercent(settings.vignetteBoost, VIGNETTE_MIN, VIGNETTE_MAX)
-  const filterPercent =
-    filterOptions.length > 1
-      ? (selectedFilterIndex / (filterOptions.length - 1)) * 100
-      : 100
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(37,220,224,0.16),transparent_28%),linear-gradient(180deg,#071718,#02090a)]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
-        <div className="rounded-[30px] border border-cyan-400/18 bg-[#081f20]/96 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(0,255,255,0.04)] sm:p-6">
-          <div className="flex items-start justify-between gap-4 border-b border-cyan-400/12 pb-5">
+    <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(203,148,89,0.18),transparent_28%),linear-gradient(180deg,#120b08,#050302)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] min-w-0 flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
+        <div className="rounded-[30px] border border-amber-200/18 bg-[#1a120d]/96 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,214,170,0.04)] sm:p-6">
+          <div className="flex items-start justify-between gap-4 border-b border-amber-200/10 pb-5">
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-cyan-300/72">
-                Sensor Controls
+              <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-amber-200/72">
+                Настройки
               </div>
               <div className="mt-3 font-mono text-[clamp(26px,5vw,40px)] uppercase tracking-[0.06em] text-white">
-                Camera Setup
+                Параметры камеры
               </div>
-              <div className="mt-3 max-w-[32rem] text-sm leading-6 text-cyan-50/70">
-                Один экран настроек без вложенных меню. Фильтр, текстура и оптика
+              <div className="mt-3 max-w-[32rem] text-sm leading-6 text-amber-50/70">
+                Все настройки собраны на одном экране. Эффект, текстура и камера
                 меняются сразу, а превью остается чистым, если включен случайный режим.
               </div>
             </div>
@@ -84,7 +76,7 @@ export function CameraMenu({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-cyan-400/18 bg-[#0b2324]/82 text-4xl leading-none text-white/92 transition hover:border-cyan-300/38 hover:text-cyan-200"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-amber-200/18 bg-[#241710]/82 text-4xl leading-none text-amber-50/92 transition hover:border-amber-200/38 hover:text-amber-100"
             >
               <span className="-mt-1">×</span>
             </button>
@@ -92,33 +84,14 @@ export function CameraMenu({
 
           <div className="mt-5 grid gap-4">
             <ControlCard
-              label="Picture Profile"
+              label="Фильтр"
               value={selectedFilter.name}
               helper={selectedFilter.description}
             >
-              <input
-                type="range"
-                min={0}
-                max={filterOptions.length - 1}
-                step={1}
-                value={selectedFilterIndex}
-                style={{ '--slider-fill': `${filterPercent}%` } as CSSProperties}
-                onChange={(event) => {
-                  const nextOption = filterOptions[Number(event.target.value)]
-                  if (!nextOption) {
-                    return
-                  }
-
-                  onSettingsChange((current) => ({
-                    ...current,
-                    filterId: nextOption.id,
-                  }))
-                }}
-                className="range-slider w-full"
-              />
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <div className="-mx-1 overflow-x-auto px-1 pb-1">
+                <div className="flex min-w-max gap-2">
                 {filterOptions.map((option) => (
-                  <ChipButton
+                  <ProfileButton
                     key={option.id}
                     active={settings.filterId === option.id}
                     onClick={() => {
@@ -129,66 +102,61 @@ export function CameraMenu({
                     }}
                   >
                     {option.name}
-                  </ChipButton>
+                  </ProfileButton>
                 ))}
+                </div>
               </div>
               {settings.filterId === RANDOM_FILTER_ID ? (
-                <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-cyan-300/78">
-                  Preview clean, random filter applies only on capture.
+                <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-amber-200/78">
+                  В превью без эффекта, случайный фильтр применяется только при съемке.
                 </div>
               ) : null}
             </ControlCard>
 
             <ControlCard
-              label="Film Grain"
+              label="Зерно"
               value={`${grainPercent}%`}
               helper="Плотность пленочного шума в превью и на сохраненном кадре."
             >
-              <input
-                type="range"
+              <StripeSlider
+                label="Зерно"
+                value={settings.grainBoost}
                 min={GRAIN_MIN}
                 max={GRAIN_MAX}
-                step={0.05}
-                value={settings.grainBoost}
-                style={{ '--slider-fill': `${grainPercent}%` } as CSSProperties}
-                onChange={(event) => {
+                segments={24}
+                onChange={(nextValue) => {
                   onSettingsChange((current) => ({
                     ...current,
-                    grainBoost: Number(event.target.value),
+                    grainBoost: nextValue,
                   }))
                 }}
-                className="range-slider w-full"
               />
-              <ScaleRow activePercent={grainPercent} />
             </ControlCard>
 
             <ControlCard
-              label="Edge Vignette"
+              label="Виньетка"
               value={`${vignettePercent}%`}
               helper="Затемнение по краям, чтобы фильтры ощущались плотнее и глубже."
             >
-              <input
-                type="range"
+              <StripeSlider
+                label="Виньетка"
+                value={settings.vignetteBoost}
                 min={VIGNETTE_MIN}
                 max={VIGNETTE_MAX}
-                step={0.05}
-                value={settings.vignetteBoost}
-                style={{ '--slider-fill': `${vignettePercent}%` } as CSSProperties}
-                onChange={(event) => {
+                segments={24}
+                onChange={(nextValue) => {
                   onSettingsChange((current) => ({
                     ...current,
-                    vignetteBoost: Number(event.target.value),
+                    vignetteBoost: nextValue,
                   }))
                 }}
-                className="range-slider w-full"
               />
-              <ScaleRow activePercent={vignettePercent} />
             </ControlCard>
 
             <ControlCard
-              label="Date Stamp"
-              value={settings.showTimestamp ? 'Enabled' : 'Disabled'}
-              helper="Штамп даты виден в live preview и впекается в итоговое фото."
+              label="Штамп даты"
+              value={settings.showTimestamp ? 'Включен' : 'Выключен'}
+              helper="Штамп даты виден в предпросмотре и впекается в итоговое фото."
             >
               <div className="grid grid-cols-2 gap-3">
                 <SegmentButton
@@ -200,7 +168,7 @@ export function CameraMenu({
                     }))
                   }}
                 >
-                  On
+                  Вкл
                 </SegmentButton>
                 <SegmentButton
                   active={!settings.showTimestamp}
@@ -211,29 +179,29 @@ export function CameraMenu({
                     }))
                   }}
                 >
-                  Off
+                  Выкл
                 </SegmentButton>
               </div>
             </ControlCard>
 
             <ControlCard
-              label="Lens Select"
-              value={devices.length > 1 ? `${devices.length} cameras` : 'Single lens'}
+              label="Камера"
+              value={devices.length > 1 ? `${devices.length} камеры` : 'Одна камера'}
               helper="Активная камера переключается здесь же, без отдельного подменю."
             >
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {devices.length > 0 ? (
                   devices.map((device, index) => (
-                    <ChipButton
+                    <ProfileButton
                       key={device.deviceId}
                       active={device.deviceId === activeDeviceId}
                       onClick={() => onCameraSelect(device.deviceId)}
                     >
-                      {device.label || `Camera ${index + 1}`}
-                    </ChipButton>
+                      {device.label || `Камера ${index + 1}`}
+                    </ProfileButton>
                   ))
                 ) : (
-                  <div className="rounded-[16px] border border-cyan-400/14 bg-[#0c2b2d] px-4 py-4 text-sm text-cyan-50/62">
+                  <div className="rounded-[16px] border border-amber-200/14 bg-[#251811] px-4 py-4 text-sm text-amber-50/62">
                     Камеры появятся здесь после выдачи разрешения браузеру.
                   </div>
                 )}
@@ -244,22 +212,22 @@ export function CameraMenu({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-[22px] bg-cyan-400 px-6 py-4 font-mono text-sm uppercase tracking-[0.24em] text-[#062021] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-cyan-300"
+                className="rounded-[22px] bg-[#d3a062] px-6 py-4 font-mono text-sm uppercase tracking-[0.24em] text-[#2b180d] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-[#e4b77b]"
               >
-                Return To Camera
+                Вернуться к камере
               </button>
 
               {canInstall ? (
                 <button
                   type="button"
                   onClick={onInstall}
-                  className="rounded-[22px] border border-cyan-400/18 bg-[#0d2b2d] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-cyan-200 transition hover:border-cyan-300/38"
+                  className="rounded-[22px] border border-amber-200/18 bg-[#241710] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-amber-100 transition hover:border-amber-200/38"
                 >
-                  Install App
+                  Установить приложение
                 </button>
               ) : (
-                <div className="rounded-[22px] border border-cyan-400/14 bg-[#0d2b2d] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-cyan-100/70">
-                  {isInstalled ? 'App Installed' : 'Web Mode'}
+                <div className="rounded-[22px] border border-amber-200/14 bg-[#241710] px-6 py-4 font-mono text-sm uppercase tracking-[0.2em] text-amber-50/70">
+                  {isInstalled ? 'Приложение установлено' : 'Веб-режим'}
                 </div>
               )}
             </div>
@@ -282,40 +250,72 @@ function ControlCard({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-[26px] border border-cyan-400/16 bg-[#0d2b2d] p-5 shadow-[inset_0_0_0_1px_rgba(0,255,255,0.03)]">
+    <section className="min-w-0 rounded-[26px] border border-amber-200/16 bg-[#241710] p-5 shadow-[inset_0_0_0_1px_rgba(255,214,170,0.03)]">
       <div className="flex items-start justify-between gap-3">
-        <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-cyan-300/74">
+        <div className="font-mono text-[11px] uppercase tracking-[0.34em] text-amber-200/74">
           {label}
         </div>
-        <div className="font-mono text-sm uppercase tracking-[0.2em] text-cyan-300">
+        <div className="max-w-[52%] text-right font-mono text-sm uppercase tracking-[0.2em] text-amber-200">
           {value}
         </div>
       </div>
-      <div className="mt-3 text-sm leading-6 text-cyan-50/70">{helper}</div>
+      <div className="mt-3 text-sm leading-6 text-amber-50/70">{helper}</div>
       <div className="mt-5">{children}</div>
     </section>
   )
 }
 
-function ScaleRow({ activePercent }: { activePercent: number }) {
-  const activeBars = Math.max(1, Math.min(24, Math.round((activePercent / 100) * 24)))
+function StripeSlider({
+  label,
+  value,
+  min,
+  max,
+  segments,
+  onChange,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  segments: number
+  onChange: (value: number) => void
+}) {
+  const activeBars = Math.max(
+    1,
+    Math.min(segments, Math.round(((value - min) / (max - min)) * segments)),
+  )
 
   return (
     <div
-      className="mt-4 grid gap-px overflow-hidden rounded-[6px] bg-[#11494b] p-1"
-      style={{ gridTemplateColumns: 'repeat(24, minmax(0, 1fr))' }}
+      className="grid gap-px overflow-hidden rounded-[8px] bg-[#493224] p-1"
+      style={{ gridTemplateColumns: `repeat(${segments}, minmax(0, 1fr))` }}
+      role="slider"
+      aria-label={label}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={value}
     >
-      {Array.from({ length: 24 }).map((_, index) => (
-        <span
-          key={index}
-          className={`h-4 rounded-[1px] ${index < activeBars ? 'bg-cyan-400' : 'bg-[#155153]'}`}
-        />
-      ))}
+      {Array.from({ length: segments }).map((_, index) => {
+        const nextValue = min + ((index + 1) / segments) * (max - min)
+
+        return (
+          <button
+            type="button"
+            key={index}
+            onClick={() => onChange(Number(nextValue.toFixed(2)))}
+            className={`h-6 rounded-[2px] transition ${
+              index < activeBars
+                ? 'bg-[#d3a062] hover:bg-[#e4b77b]'
+                : 'bg-[#6c4a35] hover:bg-[#82593f]'
+            }`}
+          />
+        )
+      })}
     </div>
   )
 }
 
-function ChipButton({
+function ProfileButton({
   children,
   active,
   onClick,
@@ -328,10 +328,10 @@ function ChipButton({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-[14px] border px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] transition ${
+      className={`min-w-0 shrink-0 rounded-[16px] border px-3 py-4 text-left font-mono text-[11px] uppercase leading-5 tracking-[0.16em] transition ${
         active
-          ? 'border-cyan-300 bg-cyan-400 text-[#082324]'
-          : 'border-cyan-400/18 bg-[#103234] text-cyan-200 hover:border-cyan-300/40'
+          ? 'border-amber-200 bg-[#d3a062] text-[#2b180d]'
+          : 'border-amber-200/18 bg-[#322117] text-amber-100 hover:border-amber-200/40'
       }`}
     >
       {children}
@@ -354,8 +354,8 @@ function SegmentButton({
       onClick={onClick}
       className={`rounded-[18px] border px-4 py-4 font-mono text-sm uppercase tracking-[0.2em] transition ${
         active
-          ? 'border-cyan-300 bg-cyan-400 text-[#082324]'
-          : 'border-cyan-400/16 bg-[#103234] text-cyan-200 hover:border-cyan-300/40'
+          ? 'border-amber-200 bg-[#d3a062] text-[#2b180d]'
+          : 'border-amber-200/16 bg-[#322117] text-amber-100 hover:border-amber-200/40'
       }`}
     >
       {children}

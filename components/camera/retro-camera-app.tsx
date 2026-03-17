@@ -66,13 +66,13 @@ export function RetroCameraApp() {
 
   const cameraLabel =
     devices.find((device) => device.deviceId === activeDeviceId)?.label ||
-    `CAM ${devices.length || 1}`
+    `Камера ${devices.length || 1}`
   const batteryText =
-    batteryLevel === null ? 'BAT --' : `BAT ${batteryLevel}%${isCharging ? ' +' : ''}`
+    batteryLevel === null ? 'Заряд --' : `Заряд ${batteryLevel}%${isCharging ? ' +' : ''}`
   const modeText = isRandomFilterMode ? RANDOM_FILTER_OPTION.name : activeFilter.name
   const resolutionText = photoResolution
-    ? `${photoResolution.width}x${photoResolution.height}`
-    : `${Math.round(previewAspectRatio * 100) / 100}:1`
+    ? `Фото ${photoResolution.width}x${photoResolution.height}`
+    : `Формат ${Math.round(previewAspectRatio * 100) / 100}:1`
 
   useEffect(() => {
     return () => {
@@ -99,7 +99,7 @@ export function RetroCameraApp() {
       url: objectUrl,
       filename: createFilename(),
       filterName: filterForCapture.name,
-      resolutionText: `${frame.width}x${frame.height}`,
+      resolutionText: `Фото ${frame.width}x${frame.height}`,
     })
   }
 
@@ -113,7 +113,7 @@ export function RetroCameraApp() {
     }
 
     setIsCaptureActionPending(true)
-    const outcome = await shareBlob(capturedShot.blob, capturedShot.filename, 'Retro Camera Shot')
+    const outcome = await shareBlob(capturedShot.blob, capturedShot.filename, 'Снимок ретро-камеры')
     if (outcome === 'unsupported') {
       downloadBlob(capturedShot.blob, capturedShot.filename)
     }
@@ -129,7 +129,7 @@ export function RetroCameraApp() {
     const outcome = await shareBlob(
       capturedShot.blob,
       capturedShot.filename,
-      `${capturedShot.filterName} - Retro Camera Shot`,
+      `${capturedShot.filterName} - снимок ретро-камеры`,
     )
     if (outcome === 'unsupported') {
       downloadBlob(capturedShot.blob, capturedShot.filename)
@@ -138,12 +138,12 @@ export function RetroCameraApp() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#071718] text-white">
+    <main className="min-h-screen overflow-hidden bg-[#120b08] text-white">
       <canvas ref={previewCanvasRef} className="hidden" />
 
       <section className="mx-auto flex min-h-[100dvh] w-full max-w-[860px] flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-[calc(env(safe-area-inset-top)+12px)] sm:px-4">
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[34px] border border-cyan-400/16 bg-[#041112] shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(0,255,255,0.03)]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(39,185,190,0.14),transparent_28%),linear-gradient(180deg,rgba(57,255,255,0.04),transparent_22%,transparent_82%,rgba(57,255,255,0.03))]" />
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[34px] border border-amber-200/16 bg-[#140d09] shadow-[0_30px_80px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,214,170,0.03)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(203,148,89,0.18),transparent_28%),linear-gradient(180deg,rgba(255,228,190,0.05),transparent_22%,transparent_82%,rgba(214,155,91,0.05))]" />
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full object-cover opacity-[0.94]"
@@ -169,7 +169,7 @@ export function RetroCameraApp() {
 
           <CameraHud
             showTimestamp={settings.showTimestamp}
-            dateTint={previewFilter?.dateTint ?? '#ffffff'}
+            dateTint={previewFilter?.dateTint ?? '#f0d1a2'}
             isStarting={isStarting}
             error={error}
           />
@@ -177,37 +177,31 @@ export function RetroCameraApp() {
           <button
             type="button"
             onClick={() => setIsMenuOpen(true)}
-            className="absolute right-3 top-3 z-20 rounded-[16px] border border-cyan-400/20 bg-[#0b2324]/82 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.26em] text-cyan-200 shadow-[inset_0_0_0_1px_rgba(0,255,255,0.04)] backdrop-blur-sm"
+            className="absolute right-3 top-3 z-20 rounded-[16px] border border-amber-200/20 bg-[#241710]/82 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.26em] text-amber-100 shadow-[inset_0_0_0_1px_rgba(255,214,170,0.04)] backdrop-blur-sm"
           >
-            Set
+            Меню
           </button>
         </div>
 
-        <div className="mt-3 rounded-[30px] border border-cyan-400/18 bg-[#081f20]/94 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(0,255,255,0.04)] sm:p-5">
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div className="grid gap-3">
-              <div className="flex flex-wrap gap-2">
-                <InfoPill strong>{modeText}</InfoPill>
-                <InfoPill>{clockText}</InfoPill>
-                <InfoPill>{batteryText}</InfoPill>
-                <InfoPill>{resolutionText}</InfoPill>
-              </div>
+        <div className="mt-3 rounded-[28px] border border-amber-200/18 bg-[#1a120d]/94 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,214,170,0.04)]">
+          <div className="flex flex-wrap gap-2">
+            <InfoPill strong>{modeText}</InfoPill>
+            <InfoPill>{clockText}</InfoPill>
+            <InfoPill>{batteryText}</InfoPill>
+            <InfoPill>{resolutionText}</InfoPill>
+          </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <InfoBlock label="Lens" value={cameraLabel} />
-                <InfoBlock
-                  label="Sensor"
-                  value={`Grain ${grainPercent}% / Vignette ${vignettePercent}%`}
-                />
-                <InfoBlock
-                  label="Date Stamp"
-                  value={settings.showTimestamp ? 'Printed on frame' : 'Disabled'}
-                />
-                <InfoBlock
-                  label="Capture Mode"
-                  value={isReady ? 'Ready to shoot' : 'Starting camera'}
-                />
-              </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_132px] sm:items-center">
+            <div className="grid gap-2">
+              <SummaryRow label="Камера" value={cameraLabel} />
+              <SummaryRow
+                label="Эффект"
+                value={`Зерно ${grainPercent}% · Виньетка ${vignettePercent}%`}
+              />
+              <SummaryRow
+                label="Штамп даты"
+                value={settings.showTimestamp ? 'Включен' : 'Выключен'}
+              />
             </div>
 
             <button
@@ -216,12 +210,16 @@ export function RetroCameraApp() {
                 void handleCapture()
               }}
               disabled={!isReady || isStarting}
-              className="h-24 w-full rounded-[26px] border border-cyan-300/28 bg-cyan-400 p-3 text-[#062021] shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_20px_30px_rgba(0,0,0,0.25)] transition hover:bg-cyan-300 disabled:opacity-50 sm:w-28"
+              className="h-20 w-full rounded-[22px] border border-amber-200/28 bg-[#d3a062] px-4 text-[#2b180d] shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_14px_24px_rgba(0,0,0,0.22)] transition hover:bg-[#e4b77b] disabled:opacity-50"
             >
-              <span className="grid h-full w-full place-items-center rounded-[18px] border border-[#0e5759]/30 bg-[#29d4d9] font-mono text-xs uppercase tracking-[0.24em]">
-                Snap
+              <span className="grid h-full w-full place-items-center rounded-[16px] border border-[#8f6138]/34 bg-[#e1bc87] font-mono text-sm uppercase tracking-[0.2em]">
+                Снять
               </span>
             </button>
+          </div>
+
+          <div className="mt-3 rounded-[18px] border border-amber-200/12 bg-[#241710] px-4 py-3 text-sm text-amber-50/78">
+            {isReady ? 'Камера готова к съемке.' : 'Запускаем камеру...'}
           </div>
         </div>
 
@@ -273,8 +271,8 @@ function InfoPill({
     <div
       className={`rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.2em] ${
         strong
-          ? 'border-cyan-300/34 bg-cyan-400 text-[#062021]'
-          : 'border-cyan-400/16 bg-[#0d2b2d] text-cyan-100/82'
+          ? 'border-amber-200/34 bg-[#d3a062] text-[#2b180d]'
+          : 'border-amber-200/16 bg-[#241710] text-amber-50/82'
       }`}
     >
       {children}
@@ -282,7 +280,7 @@ function InfoPill({
   )
 }
 
-function InfoBlock({
+function SummaryRow({
   label,
   value,
 }: {
@@ -290,11 +288,11 @@ function InfoBlock({
   value: string
 }) {
   return (
-    <div className="rounded-[20px] border border-cyan-400/14 bg-[#0d2b2d] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(0,255,255,0.02)]">
-      <div className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-amber-200/14 bg-[#241710] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(255,214,170,0.02)]">
+      <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-amber-200/68">
         {label}
       </div>
-      <div className="mt-2 text-sm leading-6 text-cyan-50/78">{value}</div>
+      <div className="text-right text-sm leading-6 text-amber-50/82">{value}</div>
     </div>
   )
 }
