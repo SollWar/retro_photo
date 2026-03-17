@@ -11,6 +11,7 @@ import type {
   CaptureResolution,
   CaptureSettings,
   FilterDefinition,
+  PreviewPerformanceProfile,
 } from '@/lib/types'
 
 type ImageCaptureLike = {
@@ -40,6 +41,39 @@ type UseCameraResult = {
 
 const IDEAL_CAPTURE_WIDTH = 4096
 const IDEAL_CAPTURE_HEIGHT = 3072
+const FULL_PREVIEW_WIDTH = 1920
+const FULL_PREVIEW_HEIGHT = 1440
+const BALANCED_PREVIEW_WIDTH = 1280
+const BALANCED_PREVIEW_HEIGHT = 960
+
+function getPreviewConstraints(
+  profile: PreviewPerformanceProfile,
+  deviceId?: string,
+): MediaTrackConstraints {
+  const isBalanced = profile === 'balanced'
+  const baseConstraints: MediaTrackConstraints = {
+    width: {
+      ideal: isBalanced ? BALANCED_PREVIEW_WIDTH : FULL_PREVIEW_WIDTH,
+    },
+    height: {
+      ideal: isBalanced ? BALANCED_PREVIEW_HEIGHT : FULL_PREVIEW_HEIGHT,
+    },
+    aspectRatio: { ideal: 4 / 3 },
+    frameRate: isBalanced ? { ideal: 24, max: 24 } : { ideal: 30, max: 30 },
+  }
+
+  if (deviceId) {
+    return {
+      ...baseConstraints,
+      deviceId: { exact: deviceId },
+    }
+  }
+
+  return {
+    ...baseConstraints,
+    facingMode: { ideal: 'environment' },
+  }
+}
 
 function selectMaxFourByThreeSize(capabilities?: {
   imageWidth?: { min?: number; max?: number; step?: number }
@@ -99,7 +133,7 @@ async function getPreferredPhotoSize(
   }
 }
 
-export function useCamera(): UseCameraResult {
+export function useCamera(previewPerformance: PreviewPerformanceProfile): UseCameraResult {
   const videoRef = useRef<HTMLVideoElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const activeStreamRef = useRef<MediaStream | null>(null)
@@ -165,11 +199,7 @@ export function useCamera(): UseCameraResult {
 
       try {
         const initialStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: IDEAL_CAPTURE_WIDTH },
-            height: { ideal: IDEAL_CAPTURE_HEIGHT },
-          },
+          video: getPreviewConstraints(previewPerformance),
           audio: false,
         })
 
@@ -215,17 +245,7 @@ export function useCamera(): UseCameraResult {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: deviceId
-          ? {
-              deviceId: { exact: deviceId },
-              width: { ideal: IDEAL_CAPTURE_WIDTH },
-              height: { ideal: IDEAL_CAPTURE_HEIGHT },
-            }
-          : {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: IDEAL_CAPTURE_WIDTH },
-              height: { ideal: IDEAL_CAPTURE_HEIGHT },
-            },
+        video: getPreviewConstraints(previewPerformance, deviceId),
         audio: false,
       })
 

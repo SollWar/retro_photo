@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { useCamera } from '@/hooks/use-camera'
 import { useInstallPrompt } from '@/hooks/use-install-prompt'
+import { usePreviewPerformance } from '@/hooks/use-preview-performance'
 import { downloadBlob, shareBlob } from '@/lib/camera-utils'
 import { getCameraTheme } from '@/lib/camera-theme'
 import {
@@ -40,6 +41,7 @@ export function RetroCameraApp() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [capturedShot, setCapturedShot] = useState<CapturedShot | null>(null)
   const [isCaptureActionPending, setIsCaptureActionPending] = useState(false)
+  const previewPerformance = usePreviewPerformance()
 
   const {
     videoRef,
@@ -53,7 +55,7 @@ export function RetroCameraApp() {
     error,
     startCamera,
     capturePhoto,
-  } = useCamera()
+  } = useCamera(previewPerformance)
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt()
 
   const selectedFilter = useMemo(() => getFilterById(settings.filterId), [settings.filterId])
@@ -197,6 +199,7 @@ export function RetroCameraApp() {
                   filter={previewFilter}
                   grainBoost={settings.grainBoost}
                   vignetteBoost={settings.vignetteBoost}
+                  previewPerformance={previewPerformance}
                 />
               ) : null}
 

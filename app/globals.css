@@ -49,6 +49,7 @@ input {
 .theme-preview-surface {
   background-color: var(--theme-bg-soft);
   border-color: var(--theme-border);
+  contain: paint;
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.5),
     inset 0 0 0 1px var(--theme-border-faint);
@@ -166,5 +167,17 @@ input {
     var(--grain-primary, 14px) var(--grain-primary, 14px),
     var(--grain-secondary, 17px) var(--grain-secondary, 17px),
     var(--grain-tertiary, 9px) var(--grain-tertiary, 9px);
+  mix-blend-mode: soft-light;
+}
+
+.preview-grain-lite {
+  opacity: var(--grain-opacity, 0.14);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.22) 0.75px, transparent 0.75px),
+    radial-gradient(rgba(0, 0, 0, 0.18) 0.75px, transparent 0.75px);
+  background-position: 0 0, 10px 11px;
+  background-size:
+    var(--grain-primary, 14px) var(--grain-primary, 14px),
+    var(--grain-secondary, 17px) var(--grain-secondary, 17px);
   mix-blend-mode: soft-light;
 }

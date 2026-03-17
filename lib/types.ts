@@ -15,6 +15,8 @@ export type FilterDefinition = {
   grain: number
 }
 
+export type PreviewPerformanceProfile = 'full' | 'balanced'
+
 export type CaptureSettings = {
   filterId: string
   grainBoost: number
