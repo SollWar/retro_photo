@@ -13,16 +13,16 @@ export function SelectButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-[18px] border px-4 py-4 text-left ${
+      className={`w-full rounded-[22px] border px-5 py-5 text-left transition ${
         selected
-          ? 'border-white bg-white text-black'
-          : 'border-white/15 bg-white/[0.04] text-white'
+          ? 'border-cyan-300 bg-cyan-400 text-[#04191a]'
+          : 'border-cyan-500/30 bg-[#103234] text-cyan-100 hover:border-cyan-300/45 hover:bg-[#123c3f]'
       }`}
     >
-      <div className="font-mono text-sm uppercase tracking-[0.18em]">{label}</div>
+      <div className="font-mono text-base uppercase tracking-[0.12em]">{label}</div>
       <div
-        className={`mt-1 font-mono text-[11px] uppercase tracking-[0.14em] ${
-          selected ? 'text-black/70' : 'text-white/55'
+        className={`mt-2 font-mono text-xs uppercase tracking-[0.16em] ${
+          selected ? 'text-[#083234]/75' : 'text-cyan-200/60'
         }`}
       >
         {detail}

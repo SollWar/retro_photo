@@ -11,12 +11,12 @@ export function MenuButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-[18px] border border-white/15 bg-white/[0.04] px-4 py-4 text-left"
+      className="group flex w-full items-center justify-between rounded-[22px] border border-cyan-500/30 bg-[#103234] px-5 py-5 text-left shadow-[inset_0_0_0_1px_rgba(0,255,255,0.04)] transition hover:border-cyan-300/45 hover:bg-[#123c3f]"
     >
-      <span className="font-mono text-sm uppercase tracking-[0.18em] text-white">
+      <span className="font-mono text-base uppercase tracking-[0.12em] text-cyan-300">
         {label}
       </span>
-      <span className="ml-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/60">
+      <span className="ml-4 font-mono text-sm uppercase tracking-[0.12em] text-cyan-200/80 group-hover:text-cyan-100">
         {value}
       </span>
     </button>
